@@ -4,14 +4,11 @@ import com.enterprise.agentplatform.audit.service.AuditService;
 import com.enterprise.agentplatform.common.api.ErrorCode;
 import com.enterprise.agentplatform.common.api.PageResponse;
 import com.enterprise.agentplatform.common.exception.BusinessException;
+import com.enterprise.agentplatform.common.security.UserRoleResolver;
 import com.enterprise.agentplatform.domain.entity.AuthTokenSession;
-import com.enterprise.agentplatform.domain.entity.Role;
 import com.enterprise.agentplatform.domain.entity.UserAccount;
-import com.enterprise.agentplatform.domain.entity.UserRole;
 import com.enterprise.agentplatform.domain.repository.AuthTokenSessionRepository;
-import com.enterprise.agentplatform.domain.repository.RoleRepository;
 import com.enterprise.agentplatform.domain.repository.UserAccountRepository;
-import com.enterprise.agentplatform.domain.repository.UserRoleRepository;
 import com.enterprise.agentplatform.user.dto.TokenSessionAdminResponse;
 import com.enterprise.agentplatform.user.dto.UserAdminResponse;
 import java.time.LocalDateTime;
@@ -19,8 +16,6 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -31,21 +26,18 @@ import org.springframework.transaction.annotation.Transactional;
 public class UserAdminService {
 
     private final UserAccountRepository userAccountRepository;
-    private final UserRoleRepository userRoleRepository;
-    private final RoleRepository roleRepository;
+    private final UserRoleResolver userRoleResolver;
     private final AuthTokenSessionRepository authTokenSessionRepository;
     private final AuditService auditService;
 
     public UserAdminService(
             UserAccountRepository userAccountRepository,
-            UserRoleRepository userRoleRepository,
-            RoleRepository roleRepository,
+            UserRoleResolver userRoleResolver,
             AuthTokenSessionRepository authTokenSessionRepository,
             AuditService auditService
     ) {
         this.userAccountRepository = userAccountRepository;
-        this.userRoleRepository = userRoleRepository;
-        this.roleRepository = roleRepository;
+        this.userRoleResolver = userRoleResolver;
         this.authTokenSessionRepository = authTokenSessionRepository;
         this.auditService = auditService;
     }
@@ -56,7 +48,7 @@ public class UserAdminService {
                 .stream()
                 .sorted(Comparator.comparing(UserAccount::getId))
                 .toList();
-        Map<Long, Set<String>> rolesByUserId = resolveRoleCodesByUserId(users.stream().map(UserAccount::getId).toList());
+        Map<Long, Set<String>> rolesByUserId = userRoleResolver.resolveRoleCodesByUserId(users.stream().map(UserAccount::getId).toList());
         return users.stream()
                 .map(user -> toResponse(user, rolesByUserId.getOrDefault(user.getId(), Set.of())))
                 .toList();
@@ -65,7 +57,7 @@ public class UserAdminService {
     @Transactional(readOnly = true)
     public PageResponse<UserAdminResponse> listUsers(int page, int size) {
         Page<UserAccount> users = userAccountRepository.findAll(PageRequest.of(page, size, Sort.by(Sort.Direction.ASC, "id")));
-        Map<Long, Set<String>> rolesByUserId = resolveRoleCodesByUserId(users.stream().map(UserAccount::getId).toList());
+        Map<Long, Set<String>> rolesByUserId = userRoleResolver.resolveRoleCodesByUserId(users.stream().map(UserAccount::getId).toList());
         return PageResponse.from(users.map(user -> toResponse(user, rolesByUserId.getOrDefault(user.getId(), Set.of()))));
     }
 
@@ -84,7 +76,7 @@ public class UserAdminService {
                 "previousFailedLoginCount", previousFailedCount,
                 "wasLocked", wasLocked
         ));
-        return toResponse(saved, resolveRoleCodes(saved.getId()));
+        return toResponse(saved, userRoleResolver.resolveRoleCodes(saved.getId()));
     }
 
     @Transactional(readOnly = true)
@@ -145,30 +137,6 @@ public class UserAdminService {
                 user.getLockedUntil(),
                 roles
         );
-    }
-
-    private Set<String> resolveRoleCodes(Long userId) {
-        return resolveRoleCodesByUserId(List.of(userId)).getOrDefault(userId, Set.of());
-    }
-
-    private Map<Long, Set<String>> resolveRoleCodesByUserId(List<Long> userIds) {
-        if (userIds.isEmpty()) {
-            return Map.of();
-        }
-        Map<Long, Role> roleById = roleRepository.findAll()
-                .stream()
-                .collect(Collectors.toMap(Role::getId, Function.identity()));
-        return userRoleRepository.findByUserIdIn(userIds)
-                .stream()
-                .collect(Collectors.groupingBy(
-                        UserRole::getUserId,
-                        Collectors.collectingAndThen(Collectors.toList(), userRoles -> userRoles.stream()
-                                .map(UserRole::getRoleId)
-                                .map(roleById::get)
-                                .filter(role -> role != null)
-                                .map(Role::getCode)
-                                .collect(Collectors.toUnmodifiableSet()))
-                ));
     }
 
     private TokenSessionAdminResponse toSessionResponse(AuthTokenSession session, LocalDateTime now) {

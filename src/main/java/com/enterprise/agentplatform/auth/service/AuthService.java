@@ -10,19 +10,15 @@ import com.enterprise.agentplatform.common.security.SimpleTokenStore;
 import com.enterprise.agentplatform.common.security.SimpleTokenStore.TokenPair;
 import com.enterprise.agentplatform.common.security.RolePermissionMapper;
 import com.enterprise.agentplatform.common.security.TokenPrincipal;
+import com.enterprise.agentplatform.common.security.UserRoleResolver;
 import com.enterprise.agentplatform.domain.entity.AuthTokenSession;
-import com.enterprise.agentplatform.domain.entity.Role;
 import com.enterprise.agentplatform.domain.entity.UserAccount;
-import com.enterprise.agentplatform.domain.entity.UserRole;
 import com.enterprise.agentplatform.domain.enums.UserStatus;
-import com.enterprise.agentplatform.domain.repository.RoleRepository;
 import com.enterprise.agentplatform.domain.repository.UserAccountRepository;
-import com.enterprise.agentplatform.domain.repository.UserRoleRepository;
 import java.time.LocalDateTime;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -32,32 +28,29 @@ import org.springframework.transaction.annotation.Transactional;
 public class AuthService {
 
     private final UserAccountRepository userAccountRepository;
-    private final UserRoleRepository userRoleRepository;
-    private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
     private final SimpleTokenStore tokenStore;
     private final RolePermissionMapper rolePermissionMapper;
+    private final UserRoleResolver userRoleResolver;
     private final AuditService auditService;
     private final int maxFailedLoginAttempts;
     private final long loginLockoutMinutes;
 
     public AuthService(
             UserAccountRepository userAccountRepository,
-            UserRoleRepository userRoleRepository,
-            RoleRepository roleRepository,
             PasswordEncoder passwordEncoder,
             SimpleTokenStore tokenStore,
             RolePermissionMapper rolePermissionMapper,
+            UserRoleResolver userRoleResolver,
             AuditService auditService,
             @Value("${app.security.max-failed-login-attempts:5}") int maxFailedLoginAttempts,
             @Value("${app.security.login-lockout-minutes:15}") long loginLockoutMinutes
     ) {
         this.userAccountRepository = userAccountRepository;
-        this.userRoleRepository = userRoleRepository;
-        this.roleRepository = roleRepository;
         this.passwordEncoder = passwordEncoder;
         this.tokenStore = tokenStore;
         this.rolePermissionMapper = rolePermissionMapper;
+        this.userRoleResolver = userRoleResolver;
         this.auditService = auditService;
         this.maxFailedLoginAttempts = Math.max(1, maxFailedLoginAttempts);
         this.loginLockoutMinutes = Math.max(1L, loginLockoutMinutes);
@@ -91,7 +84,7 @@ public class AuthService {
         }
         resetFailedLogin(user);
 
-        Set<String> roles = resolveRoleCodes(user.getId());
+        Set<String> roles = userRoleResolver.resolveRoleCodes(user.getId());
 
         Set<String> permissions = rolePermissionMapper.permissionsFor(roles);
 
@@ -123,7 +116,7 @@ public class AuthService {
             throw new BusinessException(ErrorCode.FORBIDDEN, "账号不可用");
         }
 
-        Set<String> roles = resolveRoleCodes(user.getId());
+        Set<String> roles = userRoleResolver.resolveRoleCodes(user.getId());
         Set<String> permissions = rolePermissionMapper.permissionsFor(roles);
         SimpleTokenStore.RefreshedTokenSession refreshedSession = tokenStore.refresh(
                         request.refreshToken(),
@@ -179,17 +172,6 @@ public class AuthService {
         user.setFailedLoginCount(0);
         user.setLockedUntil(null);
         userAccountRepository.save(user);
-    }
-
-    private Set<String> resolveRoleCodes(Long userId) {
-        return userRoleRepository.findByUserId(userId)
-                .stream()
-                .map(UserRole::getRoleId)
-                .map(roleRepository::findById)
-                .filter(java.util.Optional::isPresent)
-                .map(java.util.Optional::get)
-                .map(Role::getCode)
-                .collect(Collectors.toSet());
     }
 
     private LoginResponse toLoginResponse(TokenPair tokenPair, UserAccount user, Set<String> roles, Set<String> permissions) {
