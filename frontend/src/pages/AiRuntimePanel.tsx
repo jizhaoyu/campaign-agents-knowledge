@@ -1,5 +1,6 @@
 import { AiRuntimeComponent, AiRuntimeStatus } from '../api';
 import { CardHeading } from '../components/CardHeading';
+import { InlineRetry } from '../components/InlineRetry';
 import { ListEmpty } from '../components/ListEmpty';
 
 function availabilityLabel(value: boolean) {
@@ -60,11 +61,13 @@ function RuntimeComponentCard({
 export function AiRuntimePanel({
   aiRuntimeStatus,
   aiRuntimeStatusLoading,
+  aiRuntimeStatusError,
   canReadDashboard,
   onRefresh
 }: {
   aiRuntimeStatus: AiRuntimeStatus | null;
   aiRuntimeStatusLoading: boolean;
+  aiRuntimeStatusError: string | null;
   canReadDashboard: boolean;
   onRefresh: () => void;
 }) {
@@ -115,8 +118,17 @@ export function AiRuntimePanel({
 
       <article className="card ai-runtime-guidance">
         <CardHeading marker="10" title="启动检查" />
+        {aiRuntimeStatusError && (
+          <InlineRetry
+            title={aiRuntimeStatus ? 'AI 运行配置刷新失败' : 'AI 运行配置加载失败'}
+            message={aiRuntimeStatusError}
+            actionLabel="重试配置读取"
+            onRetry={onRefresh}
+            loading={aiRuntimeStatusLoading}
+          />
+        )}
         <ListEmpty
-          show={!aiRuntimeStatus}
+          show={!aiRuntimeStatus && !aiRuntimeStatusError}
           text={aiRuntimeStatusLoading ? '正在读取 AI 运行状态...' : '点击刷新配置加载 AI 运行状态'}
         />
         {aiRuntimeStatus && (

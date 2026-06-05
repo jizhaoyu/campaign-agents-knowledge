@@ -600,6 +600,16 @@ blockquote p {
   gap: 0.3rem;
 }
 
+.inline-retry {
+  align-items: start;
+  border-color: rgba(220, 38, 38, 0.22);
+  background: rgba(254, 242, 242, 0.7);
+}
+
+.inline-retry button {
+  justify-self: start;
+}
+
 .document-library {
   grid-column: 1 / -1;
 }

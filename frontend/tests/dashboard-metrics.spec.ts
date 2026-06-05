@@ -149,3 +149,40 @@ test('keeps operations dashboard refresh single-flight while loading', async ({ 
   await expect(page.getByText('失败率 20% / 积压压力 42%')).toBeVisible();
   expect(dashboardRequestCount).toBe(1);
 });
+
+test('recovers operations dashboard metrics from inline retry after load failure', async ({ page }) => {
+  let dashboardRequestCount = 0;
+
+  await routeDashboardShell(page);
+  await page.route('**/api/v1/dashboard/operations', async (route) => {
+    dashboardRequestCount += 1;
+    if (dashboardRequestCount === 1) {
+      await route.fulfill({
+        status: 500,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          code: 'INTERNAL_ERROR',
+          message: '运营指标读取失败',
+          traceId: 'trace-dashboard-failed',
+          data: null
+        })
+      });
+      return;
+    }
+    await route.fulfill({
+      contentType: 'application/json',
+      body: JSON.stringify(okResponse('trace-dashboard', pressureDashboard()))
+    });
+  });
+
+  await page.goto('/');
+  await page.getByRole('button', { name: '进入工作台' }).click();
+
+  await expect(page.getByText('运营指标加载失败')).toBeVisible();
+  await expect(page.locator('#总览').getByText('后端异常：运营指标读取失败，traceId: trace-dashboard-failed')).toBeVisible();
+  await page.getByRole('button', { name: '重试运营指标' }).click();
+
+  await expect(page.getByText('运营指标加载失败')).toHaveCount(0);
+  await expect(page.getByText('失败率 20% / 积压压力 42%')).toBeVisible();
+  expect(dashboardRequestCount).toBe(2);
+});

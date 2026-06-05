@@ -225,7 +225,9 @@ test('shows server feedback when AI runtime loading fails', async ({ page }) => 
   await page.getByRole('button', { name: '进入工作台' }).click();
   await page.getByRole('link', { name: 'AI配置' }).click();
 
-  await expect(page.getByText('后端异常：AI 配置读取失败，traceId: trace-ai-runtime-failed')).toBeVisible();
+  await expect(page.locator('.notice').getByText('后端异常：AI 配置读取失败，traceId: trace-ai-runtime-failed')).toBeVisible();
+  await expect(page.getByText('AI 运行配置加载失败')).toBeVisible();
+  await expect(page.getByRole('button', { name: '重试配置读取' })).toBeVisible();
 });
 
 test('shows network feedback when AI runtime endpoint is unreachable', async ({ page }) => {
@@ -239,7 +241,7 @@ test('shows network feedback when AI runtime endpoint is unreachable', async ({ 
   await page.getByRole('button', { name: '进入工作台' }).click();
   await page.getByRole('link', { name: 'AI配置' }).click();
 
-  await expect(page.getByText(/^网络请求失败：/)).toBeVisible();
+  await expect(page.locator('.notice').getByText(/^网络请求失败：/)).toBeVisible();
 });
 
 test('shows network feedback when asking a knowledge-base question fails', async ({ page }) => {

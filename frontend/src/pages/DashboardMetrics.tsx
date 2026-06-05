@@ -1,4 +1,5 @@
 import { AskResult, KnowledgeBase, OperationsDashboard, SubmitTicketResult } from '../api';
+import { InlineRetry } from '../components/InlineRetry';
 import { Metric } from '../components/Metric';
 
 export function DashboardMetrics({
@@ -7,6 +8,7 @@ export function DashboardMetrics({
   submitResult,
   operationsDashboard,
   operationsDashboardLoading,
+  operationsDashboardError,
   canReadDashboard,
   onRefreshOperationsDashboard
 }: {
@@ -15,6 +17,7 @@ export function DashboardMetrics({
   submitResult: SubmitTicketResult | null;
   operationsDashboard: OperationsDashboard | null;
   operationsDashboardLoading: boolean;
+  operationsDashboardError: string | null;
   canReadDashboard: boolean;
   onRefreshOperationsDashboard: () => void;
 }) {
@@ -90,6 +93,15 @@ export function DashboardMetrics({
             ))}
           </ul>
         </div>
+      )}
+      {canReadDashboard && operationsDashboardError && (
+        <InlineRetry
+          title={operationsDashboard ? '运营指标刷新失败' : '运营指标加载失败'}
+          message={operationsDashboardError}
+          actionLabel="重试运营指标"
+          onRetry={onRefreshOperationsDashboard}
+          loading={operationsDashboardLoading}
+        />
       )}
       {canReadDashboard && (
         <div className="metric-toolbar">

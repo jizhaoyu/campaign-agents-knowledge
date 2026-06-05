@@ -178,3 +178,41 @@ test('keeps AI runtime refresh single-flight while loading', async ({ page }) =>
   await expect(page.getByText('可用')).toBeVisible();
   expect(runtimeRequestCount).toBe(1);
 });
+
+test('recovers AI runtime status from inline retry after load failure', async ({ page }) => {
+  let runtimeRequestCount = 0;
+  await routeAdminShell(page);
+
+  await page.route('**/api/v1/ai/runtime', async (route) => {
+    runtimeRequestCount += 1;
+    if (runtimeRequestCount === 1) {
+      await route.fulfill({
+        status: 500,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          code: 'INTERNAL_ERROR',
+          message: 'AI 配置读取失败',
+          traceId: 'trace-ai-runtime-failed',
+          data: null
+        })
+      });
+      return;
+    }
+    await route.fulfill({
+      contentType: 'application/json',
+      body: JSON.stringify(okResponse('trace-ai-runtime', readyAiRuntimeStatus()))
+    });
+  });
+
+  await page.goto('/');
+  await page.getByRole('button', { name: '进入工作台' }).click();
+  await page.getByRole('link', { name: 'AI配置' }).click();
+
+  await expect(page.getByText('AI 运行配置加载失败')).toBeVisible();
+  await expect(page.getByRole('alert').getByText('后端异常：AI 配置读取失败，traceId: trace-ai-runtime-failed')).toBeVisible();
+  await page.getByRole('button', { name: '重试配置读取' }).click();
+
+  await expect(page.getByText('AI 运行配置加载失败')).toHaveCount(0);
+  await expect(page.getByText('可用')).toBeVisible();
+  expect(runtimeRequestCount).toBe(2);
+});

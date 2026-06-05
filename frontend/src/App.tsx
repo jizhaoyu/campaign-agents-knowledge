@@ -156,6 +156,8 @@ function App() {
     aiRuntimeStatus,
     operationsDashboardLoading,
     aiRuntimeStatusLoading,
+    operationsDashboardError,
+    aiRuntimeStatusError,
     refreshOperationsDashboard,
     refreshAiRuntimeStatus,
     resetOperationsWorkspace
@@ -271,6 +273,7 @@ function App() {
               submitResult={submitResult}
               operationsDashboard={operationsDashboard}
               operationsDashboardLoading={operationsDashboardLoading}
+              operationsDashboardError={operationsDashboardError}
               canReadDashboard={dashboardReader}
               onRefreshOperationsDashboard={() => void refreshOperationsDashboard(token, { announceRefresh: true })}
             />
@@ -336,6 +339,7 @@ function App() {
             <AiRuntimePanel
               aiRuntimeStatus={aiRuntimeStatus}
               aiRuntimeStatusLoading={aiRuntimeStatusLoading}
+              aiRuntimeStatusError={aiRuntimeStatusError}
               canReadDashboard={dashboardReader}
               onRefresh={() => void refreshAiRuntimeStatus(token, { announceRefresh: true })}
             />
