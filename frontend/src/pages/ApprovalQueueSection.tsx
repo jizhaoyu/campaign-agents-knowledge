@@ -2,20 +2,25 @@ import { ChangeEvent, FormEvent } from 'react';
 import { ApprovalCommentTemplate, ApprovalTask } from '../api';
 import { CardHeading } from '../components/CardHeading';
 import { ListEmpty } from '../components/ListEmpty';
+import { SkeletonBlock } from '../components/SkeletonBlock';
 
 type ApprovalAction = 'approve' | 'reject';
 
 export function ApprovalQueueSection({
   approvalTasks,
   approvalCommentTemplates,
+  approvalsLoading,
   onLoadApprovals,
   onDecideApproval
 }: {
   approvalTasks: ApprovalTask[];
   approvalCommentTemplates: ApprovalCommentTemplate[];
+  approvalsLoading: boolean;
   onLoadApprovals: () => void;
   onDecideApproval: (id: number, action: ApprovalAction, templateCode: string, comment: string) => void;
 }) {
+  const showApprovalSkeleton = approvalsLoading && approvalTasks.length === 0;
+
   function decisionFormId(taskId: number, action: ApprovalAction) {
     return `approval-${taskId}-${action}`;
   }
@@ -48,9 +53,10 @@ export function ApprovalQueueSection({
     <article className="card">
       <CardHeading marker="05" title="审批队列" />
       <button type="button" onClick={onLoadApprovals}>
-        刷新待审批
+        {approvalsLoading ? '刷新中...' : '刷新待审批'}
       </button>
-      <ListEmpty show={!approvalTasks.length} text="暂无待审批任务" />
+      {showApprovalSkeleton && <SkeletonBlock label="审批队列骨架" lines={4} variant="panel" />}
+      <ListEmpty show={!approvalTasks.length && !showApprovalSkeleton} text="暂无待审批任务" />
       {approvalTasks.map((task) => (
         <div className="list-item actionable" key={task.id}>
           <strong>

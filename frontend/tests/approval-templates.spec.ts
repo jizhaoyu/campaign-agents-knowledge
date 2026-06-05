@@ -1,6 +1,9 @@
 import { expect, test } from '@playwright/test';
 
 test('applies editable approval comment templates when deciding tasks', async ({ page }) => {
+  let pendingApprovalsRequestCount = 0;
+  let releasePendingApprovalsResponse: (() => void) | null = null;
+
   await page.route('**/api/v1/auth/login', async (route) => {
     await route.fulfill({
       contentType: 'application/json',
@@ -47,6 +50,12 @@ test('applies editable approval comment templates when deciding tasks', async ({
   });
 
   await page.route('**/api/v1/approvals/pending', async (route) => {
+    pendingApprovalsRequestCount += 1;
+    if (pendingApprovalsRequestCount === 1) {
+      await new Promise<void>((resolve) => {
+        releasePendingApprovalsResponse = resolve;
+      });
+    }
     await route.fulfill({
       contentType: 'application/json',
       body: JSON.stringify({
@@ -115,6 +124,10 @@ test('applies editable approval comment templates when deciding tasks', async ({
   await page.getByRole('button', { name: '进入工作台' }).click();
   await page.getByRole('link', { name: '审批' }).click();
   await page.getByRole('button', { name: '刷新待审批' }).click();
+  await expect(page.getByLabel('审批队列骨架')).toBeVisible();
+  await expect(page.getByRole('button', { name: '刷新中...' })).toBeVisible();
+  releasePendingApprovalsResponse?.();
+  await expect(page.getByLabel('审批队列骨架')).toHaveCount(0);
 
   await page.getByLabel('通过模板').selectOption('APPROVE_EVIDENCE_SUFFICIENT');
   const approveComment = page.getByLabel('审批 #91 通过备注');

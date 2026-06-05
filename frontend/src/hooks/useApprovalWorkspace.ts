@@ -23,16 +23,19 @@ export function useApprovalWorkspace({
 }) {
   const [approvalTasks, setApprovalTasks] = useState<ApprovalTask[]>([]);
   const [approvalCommentTemplates, setApprovalCommentTemplates] = useState<ApprovalCommentTemplate[]>([]);
+  const [approvalsLoading, setApprovalsLoading] = useState(false);
 
   function resetApprovalWorkspace() {
     setApprovalTasks([]);
     setApprovalCommentTemplates([]);
+    setApprovalsLoading(false);
   }
 
   async function loadApprovals() {
     if (!token || !approvalReviewer) {
       return;
     }
+    setApprovalsLoading(true);
     try {
       const result = await workspaceApi.loadApprovalWorkspace(authRequest, token);
       setApprovalTasks(result.tasks);
@@ -40,6 +43,8 @@ export function useApprovalWorkspace({
       setNotice({ tone: 'ok', text: `待审批 ${result.tasks.length} 条` });
     } catch (error) {
       handleRequestError(error);
+    } finally {
+      setApprovalsLoading(false);
     }
   }
 
@@ -61,6 +66,7 @@ export function useApprovalWorkspace({
   return {
     approvalTasks,
     approvalCommentTemplates,
+    approvalsLoading,
     loadApprovals,
     decideApproval,
     resetApprovalWorkspace

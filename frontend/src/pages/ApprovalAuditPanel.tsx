@@ -18,6 +18,7 @@ import { UserStatusSection } from './UserStatusSection';
 export function ApprovalAuditPanel({
   approvalTasks,
   approvalCommentTemplates,
+  approvalsLoading,
   auditLogs,
   auditLogPage,
   auditLogFilters,
@@ -49,6 +50,7 @@ export function ApprovalAuditPanel({
 }: {
   approvalTasks: ApprovalTask[];
   approvalCommentTemplates: ApprovalCommentTemplate[];
+  approvalsLoading: boolean;
   auditLogs: AuditLog[];
   auditLogPage: AuditLogPage | null;
   auditLogFilters: AuditLogFilters;
@@ -84,6 +86,7 @@ export function ApprovalAuditPanel({
         <ApprovalQueueSection
           approvalTasks={approvalTasks}
           approvalCommentTemplates={approvalCommentTemplates}
+          approvalsLoading={approvalsLoading}
           onLoadApprovals={onLoadApprovals}
           onDecideApproval={onDecideApproval}
         />

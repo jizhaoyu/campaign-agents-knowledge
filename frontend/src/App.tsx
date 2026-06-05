@@ -145,6 +145,7 @@ function App() {
   const {
     approvalTasks,
     approvalCommentTemplates,
+    approvalsLoading,
     loadApprovals,
     decideApproval,
     resetApprovalWorkspace
@@ -353,6 +354,7 @@ function App() {
             <ApprovalAuditPanel
               approvalTasks={approvalTasks}
               approvalCommentTemplates={approvalCommentTemplates}
+              approvalsLoading={approvalsLoading}
               auditLogs={auditLogs}
               auditLogPage={auditLogPage}
               auditLogFilters={auditLogFilters}
