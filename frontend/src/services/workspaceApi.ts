@@ -36,6 +36,10 @@ export type DocumentQuery = {
   indexStatus?: string;
 };
 
+export type KnowledgeBaseQuery = {
+  keyword?: string;
+};
+
 export type SubmitTicketInput = {
   conversationId: number;
   title: string;
@@ -83,8 +87,11 @@ export function logoutUser(accessToken: string) {
   return request<void>('/api/v1/auth/logout', { method: 'POST' }, accessToken);
 }
 
-export function listKnowledgeBases(apiRequest: WorkspaceApiRequest, accessToken: string) {
-  return apiRequest<KnowledgeBase[]>('/api/v1/knowledge-bases', {}, accessToken);
+export function listKnowledgeBases(apiRequest: WorkspaceApiRequest, accessToken: string, query: KnowledgeBaseQuery = {}) {
+  const search = queryString({
+    keyword: query.keyword?.trim()
+  });
+  return apiRequest<KnowledgeBase[]>(`/api/v1/knowledge-bases${search ? `?${search}` : ''}`, {}, accessToken);
 }
 
 export function createKnowledgeBase(

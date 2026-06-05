@@ -14,6 +14,7 @@
 
 ## 已完成
 
+- 2026-06-06：增加知识库搜索，后端 `GET /knowledge-bases?keyword=` 按名称或说明过滤，前端选择器输入框携带关键词刷新列表
 - 2026-06-06：抽出 `hooks/knowledgeDocumentState.ts`，文档列表按 id 合并、索引状态变更提示和分页越界归一化改为纯函数
 - 2026-06-06：拆分 `KnowledgePanel.tsx` 为知识库选择、文档上传和文档管理 section，并抽出文档行渲染组件
 - 2026-06-06：拆分 `ApprovalAuditPanel.tsx` 为审批队列、用户状态、Token 会话和审计时间线独立 section，主面板只保留路由与权限分发
@@ -56,7 +57,6 @@
 
 - 引入 Tailwind CSS 或 shadcn/ui，沉淀统一 Button、Input、Card、Table、Toast 组件
 - 增加空状态、骨架屏、加载中状态和重试按钮
-- 增加知识库搜索
 
 ## P3 - 产品化方向
 

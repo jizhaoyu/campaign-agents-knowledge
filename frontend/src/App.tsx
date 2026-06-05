@@ -52,17 +52,18 @@ function App() {
   const {
     knowledgeBases,
     selectedKnowledgeBaseId,
+    knowledgeBaseKeyword,
     documents,
     documentPage,
     documentPageSize,
     documentKeyword,
     documentStatusFilter,
     setSelectedKnowledgeBaseId,
+    setKnowledgeBaseKeyword,
     setDocumentKeyword,
     setDocumentPageSize,
     setDocumentStatusFilter,
     setDocumentPage,
-    refreshKnowledgeBases,
     refreshDocuments,
     refreshDocumentStatus,
     reindexDocument,
@@ -169,7 +170,6 @@ function App() {
     if (!session) {
       return;
     }
-    void refreshKnowledgeBases(session.accessToken);
     void refreshChatHistory(session.accessToken);
   }, [session]);
 
@@ -276,6 +276,7 @@ function App() {
             <KnowledgePanel
               knowledgeBases={knowledgeBases}
               selectedKnowledgeBaseId={selectedKnowledgeBaseId}
+              knowledgeBaseKeyword={knowledgeBaseKeyword}
               documents={documents}
               documentPage={documentPage}
               documentPageSize={documentPageSize}
@@ -283,6 +284,7 @@ function App() {
               documentStatusFilter={documentStatusFilter}
               canManageKnowledge={knowledgeManager}
               onSelectKnowledgeBase={setSelectedKnowledgeBaseId}
+              onKnowledgeBaseKeywordChange={setKnowledgeBaseKeyword}
               onDocumentKeywordChange={(keyword) => {
                 setDocumentKeyword(keyword);
                 setDocumentPage(null);

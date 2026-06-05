@@ -7,6 +7,7 @@ import { KnowledgeBaseSelectorSection } from './KnowledgeBaseSelectorSection';
 export function KnowledgePanel({
   knowledgeBases,
   selectedKnowledgeBaseId,
+  knowledgeBaseKeyword,
   documents,
   documentPage,
   documentPageSize,
@@ -14,6 +15,7 @@ export function KnowledgePanel({
   documentStatusFilter,
   canManageKnowledge,
   onSelectKnowledgeBase,
+  onKnowledgeBaseKeywordChange,
   onDocumentKeywordChange,
   onDocumentPageSizeChange,
   onDocumentStatusFilterChange,
@@ -28,6 +30,7 @@ export function KnowledgePanel({
 }: {
   knowledgeBases: KnowledgeBase[];
   selectedKnowledgeBaseId: number | '';
+  knowledgeBaseKeyword: string;
   documents: DocumentUpload[];
   documentPage: DocumentPage | null;
   documentPageSize: number;
@@ -35,6 +38,7 @@ export function KnowledgePanel({
   documentStatusFilter: string;
   canManageKnowledge: boolean;
   onSelectKnowledgeBase: (id: number | '') => void;
+  onKnowledgeBaseKeywordChange: (keyword: string) => void;
   onDocumentKeywordChange: (keyword: string) => void;
   onDocumentPageSizeChange: (size: number) => void;
   onDocumentStatusFilterChange: (status: string) => void;
@@ -52,8 +56,10 @@ export function KnowledgePanel({
       <KnowledgeBaseSelectorSection
         knowledgeBases={knowledgeBases}
         selectedKnowledgeBaseId={selectedKnowledgeBaseId}
+        knowledgeBaseKeyword={knowledgeBaseKeyword}
         canManageKnowledge={canManageKnowledge}
         onSelectKnowledgeBase={onSelectKnowledgeBase}
+        onKnowledgeBaseKeywordChange={onKnowledgeBaseKeywordChange}
         onCreateKnowledgeBase={onCreateKnowledgeBase}
       />
 

@@ -1,4 +1,4 @@
-import { FormEvent, useEffect, useRef, useState } from 'react';
+import { FormEvent, useDeferredValue, useEffect, useRef, useState } from 'react';
 import { DocumentPage, DocumentUpload, KnowledgeBase } from '../api';
 import {
   documentStatusNotice,
@@ -20,6 +20,11 @@ type RefreshDocumentsOptions = {
   page?: number;
 };
 
+type RefreshKnowledgeBasesOptions = {
+  keyword?: string;
+  preferredKnowledgeBaseId?: number;
+};
+
 const DEFAULT_DOCUMENT_PAGE_SIZE = 10;
 
 export function useKnowledgeWorkspace({
@@ -39,11 +44,13 @@ export function useKnowledgeWorkspace({
 }) {
   const [knowledgeBases, setKnowledgeBases] = useState<KnowledgeBase[]>([]);
   const [selectedKnowledgeBaseId, setSelectedKnowledgeBaseId] = useState<number | ''>('');
+  const [knowledgeBaseKeyword, setKnowledgeBaseKeyword] = useState('');
   const [documents, setDocuments] = useState<DocumentUpload[]>([]);
   const [documentPage, setDocumentPage] = useState<DocumentPage | null>(null);
   const [documentPageSize, setDocumentPageSize] = useState(DEFAULT_DOCUMENT_PAGE_SIZE);
   const [documentKeyword, setDocumentKeyword] = useState('');
   const [documentStatusFilter, setDocumentStatusFilter] = useState('');
+  const deferredKnowledgeBaseKeyword = useDeferredValue(knowledgeBaseKeyword);
   const documentsRef = useRef<DocumentUpload[]>([]);
 
   function setDocumentList(nextDocuments: DocumentUpload[]) {
@@ -59,6 +66,7 @@ export function useKnowledgeWorkspace({
   function resetKnowledgeWorkspace() {
     setKnowledgeBases([]);
     setSelectedKnowledgeBaseId('');
+    setKnowledgeBaseKeyword('');
     setDocumentList([]);
     setDocumentPage(null);
     setDocumentPageSize(DEFAULT_DOCUMENT_PAGE_SIZE);
@@ -74,6 +82,13 @@ export function useKnowledgeWorkspace({
     }
     return value;
   }
+
+  useEffect(() => {
+    if (!token) {
+      return;
+    }
+    void refreshKnowledgeBases(token);
+  }, [deferredKnowledgeBaseKeyword, token]);
 
   useEffect(() => {
     if (!token || !selectedKnowledgeBaseId || !knowledgeManager || !knowledgeRouteActive) {
@@ -97,14 +112,23 @@ export function useKnowledgeWorkspace({
     return () => window.clearInterval(intervalId);
   }, [hasPendingDocument, selectedKnowledgeBaseId, token]);
 
-  async function refreshKnowledgeBases(accessToken = token, preferredKnowledgeBaseId?: number) {
+  async function refreshKnowledgeBases(accessToken = token, options: RefreshKnowledgeBasesOptions = {}) {
     if (!accessToken) {
       return;
     }
     try {
-      const result = await workspaceApi.listKnowledgeBases(authRequest, accessToken);
+      const keyword = options.keyword ?? deferredKnowledgeBaseKeyword.trim();
+      const result = await workspaceApi.listKnowledgeBases(authRequest, accessToken, { keyword });
       setKnowledgeBases(result.data);
-      setSelectedKnowledgeBaseId((current) => preferredKnowledgeBaseId || current || result.data[0]?.id || '');
+      setSelectedKnowledgeBaseId((current) => {
+        if (options.preferredKnowledgeBaseId) {
+          return options.preferredKnowledgeBaseId;
+        }
+        if (current && result.data.some((knowledgeBase) => knowledgeBase.id === current)) {
+          return current;
+        }
+        return result.data[0]?.id || '';
+      });
     } catch (error) {
       handleRequestError(error);
     }
@@ -241,11 +265,12 @@ export function useKnowledgeWorkspace({
       formElement.reset();
       setNotice({ tone: 'ok', text: `知识库已创建：${result.data.name}` });
       setSelectedKnowledgeBaseId(result.data.id);
+      setKnowledgeBaseKeyword('');
       setDocumentList([]);
       setDocumentPage(null);
       setDocumentKeyword('');
       setDocumentStatusFilter('');
-      await refreshKnowledgeBases(token, result.data.id);
+      await refreshKnowledgeBases(token, { keyword: '', preferredKnowledgeBaseId: result.data.id });
     } catch (error) {
       handleRequestError(error);
     }
@@ -279,12 +304,14 @@ export function useKnowledgeWorkspace({
   return {
     knowledgeBases,
     selectedKnowledgeBaseId,
+    knowledgeBaseKeyword,
     documents,
     documentPage,
     documentPageSize,
     documentKeyword,
     documentStatusFilter,
     setSelectedKnowledgeBaseId,
+    setKnowledgeBaseKeyword,
     setDocumentKeyword,
     setDocumentPageSize,
     setDocumentStatusFilter,

@@ -32,8 +32,15 @@ public class KnowledgeBaseService {
         return toResponse(saved);
     }
 
-    public List<KnowledgeBaseResponse> list() {
-        return knowledgeBaseRepository.findAll()
+    public List<KnowledgeBaseResponse> list(String keyword) {
+        String normalizedKeyword = keyword == null ? "" : keyword.strip();
+        List<KnowledgeBase> knowledgeBases = normalizedKeyword.isBlank()
+                ? knowledgeBaseRepository.findAll()
+                : knowledgeBaseRepository.findByNameContainingIgnoreCaseOrDescriptionContainingIgnoreCase(
+                        normalizedKeyword,
+                        normalizedKeyword
+                );
+        return knowledgeBases
                 .stream()
                 .map(this::toResponse)
                 .toList();

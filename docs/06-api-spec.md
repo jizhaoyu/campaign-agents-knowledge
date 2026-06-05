@@ -106,7 +106,11 @@ Authorization: Bearer <accessToken>
 
 ### GET /api/v1/knowledge-bases
 
-说明：查询知识库列表
+说明：查询知识库列表。未传参数时返回全部知识库；传 `keyword` 时按知识库名称或说明做大小写不敏感模糊过滤。
+
+请求参数：
+
+- `keyword`：可选，按知识库名称或说明过滤
 
 ## 用户管理接口
 

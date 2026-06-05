@@ -5,19 +5,35 @@ import { CardHeading } from '../components/CardHeading';
 export function KnowledgeBaseSelectorSection({
   knowledgeBases,
   selectedKnowledgeBaseId,
+  knowledgeBaseKeyword,
   canManageKnowledge,
   onSelectKnowledgeBase,
+  onKnowledgeBaseKeywordChange,
   onCreateKnowledgeBase
 }: {
   knowledgeBases: KnowledgeBase[];
   selectedKnowledgeBaseId: number | '';
+  knowledgeBaseKeyword: string;
   canManageKnowledge: boolean;
   onSelectKnowledgeBase: (id: number | '') => void;
+  onKnowledgeBaseKeywordChange: (keyword: string) => void;
   onCreateKnowledgeBase: (event: FormEvent<HTMLFormElement>) => void;
 }) {
   return (
     <article className="card">
       <CardHeading marker="01" title="知识库" />
+      <div className="control-row">
+        <label htmlFor="knowledgeBaseKeyword">搜索知识库</label>
+        <input
+          id="knowledgeBaseKeyword"
+          value={knowledgeBaseKeyword}
+          placeholder="按名称或说明过滤"
+          onChange={(event) => onKnowledgeBaseKeywordChange(event.target.value)}
+        />
+        <p className="hint">
+          当前显示 {knowledgeBases.length} 个知识库{knowledgeBaseKeyword.trim() ? '，未命中时可清空关键词' : ''}
+        </p>
+      </div>
       <div className="control-row">
         <label htmlFor="knowledgeBase">选择知识库</label>
         <select
