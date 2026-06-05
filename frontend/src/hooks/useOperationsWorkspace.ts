@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { AiRuntimeStatus, OperationsDashboard } from '../api';
 import * as workspaceApi from '../services/workspaceApi';
 import { WorkspaceApiRequest } from '../services/workspaceApi';
@@ -25,6 +25,10 @@ export function useOperationsWorkspace({
 }) {
   const [operationsDashboard, setOperationsDashboard] = useState<OperationsDashboard | null>(null);
   const [aiRuntimeStatus, setAiRuntimeStatus] = useState<AiRuntimeStatus | null>(null);
+  const [operationsDashboardLoading, setOperationsDashboardLoading] = useState(false);
+  const [aiRuntimeStatusLoading, setAiRuntimeStatusLoading] = useState(false);
+  const operationsDashboardInFlightRef = useRef(false);
+  const aiRuntimeStatusInFlightRef = useRef(false);
 
   useEffect(() => {
     if (!token || !dashboardReader) {
@@ -45,15 +49,21 @@ export function useOperationsWorkspace({
   function resetOperationsWorkspace() {
     setOperationsDashboard(null);
     setAiRuntimeStatus(null);
+    setOperationsDashboardLoading(false);
+    setAiRuntimeStatusLoading(false);
+    operationsDashboardInFlightRef.current = false;
+    aiRuntimeStatusInFlightRef.current = false;
   }
 
   async function refreshOperationsDashboard(
     accessToken = token,
     options: { announceRefresh?: boolean } = {}
   ) {
-    if (!accessToken || !dashboardReader) {
+    if (!accessToken || !dashboardReader || operationsDashboardInFlightRef.current) {
       return;
     }
+    operationsDashboardInFlightRef.current = true;
+    setOperationsDashboardLoading(true);
     try {
       const result = await workspaceApi.getOperationsDashboard(authRequest, accessToken);
       setOperationsDashboard(result.data);
@@ -62,13 +72,18 @@ export function useOperationsWorkspace({
       }
     } catch (error) {
       handleRequestError(error);
+    } finally {
+      operationsDashboardInFlightRef.current = false;
+      setOperationsDashboardLoading(false);
     }
   }
 
   async function refreshAiRuntimeStatus(accessToken = token, options: { announceRefresh?: boolean } = {}) {
-    if (!accessToken || !dashboardReader) {
+    if (!accessToken || !dashboardReader || aiRuntimeStatusInFlightRef.current) {
       return;
     }
+    aiRuntimeStatusInFlightRef.current = true;
+    setAiRuntimeStatusLoading(true);
     try {
       const result = await workspaceApi.getAiRuntimeStatus(authRequest, accessToken);
       setAiRuntimeStatus(result.data);
@@ -77,12 +92,17 @@ export function useOperationsWorkspace({
       }
     } catch (error) {
       handleRequestError(error);
+    } finally {
+      aiRuntimeStatusInFlightRef.current = false;
+      setAiRuntimeStatusLoading(false);
     }
   }
 
   return {
     operationsDashboard,
     aiRuntimeStatus,
+    operationsDashboardLoading,
+    aiRuntimeStatusLoading,
     refreshOperationsDashboard,
     refreshAiRuntimeStatus,
     resetOperationsWorkspace

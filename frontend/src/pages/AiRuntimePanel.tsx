@@ -59,10 +59,12 @@ function RuntimeComponentCard({
 
 export function AiRuntimePanel({
   aiRuntimeStatus,
+  aiRuntimeStatusLoading,
   canReadDashboard,
   onRefresh
 }: {
   aiRuntimeStatus: AiRuntimeStatus | null;
+  aiRuntimeStatusLoading: boolean;
   canReadDashboard: boolean;
   onRefresh: () => void;
 }) {
@@ -94,8 +96,8 @@ export function AiRuntimePanel({
           marker="09"
           title="AI 运行配置"
           action={
-            <button type="button" onClick={onRefresh}>
-              刷新配置
+            <button type="button" onClick={onRefresh} disabled={aiRuntimeStatusLoading}>
+              {aiRuntimeStatusLoading ? '刷新中...' : '刷新配置'}
             </button>
           }
         />
@@ -113,7 +115,10 @@ export function AiRuntimePanel({
 
       <article className="card ai-runtime-guidance">
         <CardHeading marker="10" title="启动检查" />
-        <ListEmpty show={!aiRuntimeStatus} text="点击刷新配置加载 AI 运行状态" />
+        <ListEmpty
+          show={!aiRuntimeStatus}
+          text={aiRuntimeStatusLoading ? '正在读取 AI 运行状态...' : '点击刷新配置加载 AI 运行状态'}
+        />
         {aiRuntimeStatus && (
           <ul>
             {aiRuntimeStatus.warnings.map((warning) => (

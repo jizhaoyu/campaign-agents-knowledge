@@ -154,6 +154,8 @@ function App() {
   const {
     operationsDashboard,
     aiRuntimeStatus,
+    operationsDashboardLoading,
+    aiRuntimeStatusLoading,
     refreshOperationsDashboard,
     refreshAiRuntimeStatus,
     resetOperationsWorkspace
@@ -268,6 +270,7 @@ function App() {
               askResult={askResult}
               submitResult={submitResult}
               operationsDashboard={operationsDashboard}
+              operationsDashboardLoading={operationsDashboardLoading}
               canReadDashboard={dashboardReader}
               onRefreshOperationsDashboard={() => void refreshOperationsDashboard(token, { announceRefresh: true })}
             />
@@ -332,6 +335,7 @@ function App() {
           {routeId === 'ai-config' && (
             <AiRuntimePanel
               aiRuntimeStatus={aiRuntimeStatus}
+              aiRuntimeStatusLoading={aiRuntimeStatusLoading}
               canReadDashboard={dashboardReader}
               onRefresh={() => void refreshAiRuntimeStatus(token, { announceRefresh: true })}
             />

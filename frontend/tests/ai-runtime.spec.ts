@@ -1,129 +1,128 @@
-import { expect, test } from '@playwright/test';
+import { expect, type Page, test } from '@playwright/test';
 
-test('shows AI runtime configuration without exposing secrets', async ({ page }) => {
-  const runtimeRequests: string[] = [];
+function okResponse(traceId: string, data: unknown) {
+  return {
+    code: 'OK',
+    message: 'success',
+    traceId,
+    data
+  };
+}
 
+function adminSession() {
+  return {
+    accessToken: 'admin-access-token',
+    refreshToken: 'admin-refresh-token',
+    expiresIn: 7200,
+    refreshExpiresIn: 604800,
+    username: 'admin',
+    displayName: '管理员',
+    roles: ['ADMIN'],
+    permissions: [
+      'knowledge:manage',
+      'chat:use',
+      'ticket:draft',
+      'ticket:submit',
+      'ticket:similar:read',
+      'approval:review',
+      'dashboard:read',
+      'audit:read',
+      'user:admin',
+      'token-session:admin'
+    ]
+  };
+}
+
+function healthyDashboard() {
+  return {
+    knowledgeBaseCount: 0,
+    documentCount: 0,
+    pendingIndexTaskCount: 0,
+    runningIndexTaskCount: 0,
+    failedIndexTaskCount: 0,
+    failedDocumentCount: 0,
+    pendingApprovalCount: 0,
+    activeHighRiskTicketCount: 0,
+    pendingHighRiskTicketCount: 0,
+    activeTokenSessionCount: 1,
+    totalIndexTaskCount: 0,
+    indexFailureRate: 0,
+    indexBacklogPressure: 0,
+    operationsBacklogCount: 0,
+    healthLevel: 'HEALTHY',
+    alertCount: 0,
+    healthSummary: '当前无待处理运营告警。',
+    recommendedActions: ['保持日常巡检。'],
+    generatedAt: '2026-06-06T02:00:00'
+  };
+}
+
+function readyAiRuntimeStatus() {
+  return {
+    activeProfiles: ['mysql', 'ai-openai'],
+    chat: {
+      enabled: true,
+      modelAvailable: true,
+      credentialConfigured: true,
+      provider: 'openai',
+      baseUrl: 'https://relay.example.com/v1',
+      path: '/chat/completions',
+      model: 'gpt-5.4'
+    },
+    embedding: {
+      enabled: false,
+      modelAvailable: false,
+      credentialConfigured: true,
+      provider: 'none',
+      baseUrl: 'https://relay.example.com/v1',
+      path: '/embeddings',
+      model: 'text-embedding-3-small'
+    },
+    readinessLevel: 'READY',
+    warnings: ['AI runtime configuration is ready for enabled components.'],
+    generatedAt: '2026-06-06T02:10:00'
+  };
+}
+
+async function routeAdminShell(page: Page) {
   await page.route('**/api/v1/auth/login', async (route) => {
     await route.fulfill({
       contentType: 'application/json',
-      body: JSON.stringify({
-        code: 'OK',
-        message: 'success',
-        traceId: 'trace-login-admin',
-        data: {
-          accessToken: 'admin-access-token',
-          refreshToken: 'admin-refresh-token',
-          expiresIn: 7200,
-          refreshExpiresIn: 604800,
-          username: 'admin',
-          displayName: '管理员',
-          roles: ['ADMIN'],
-          permissions: [
-            'knowledge:manage',
-            'chat:use',
-            'ticket:draft',
-            'ticket:submit',
-            'ticket:similar:read',
-            'approval:review',
-            'dashboard:read',
-            'audit:read',
-            'user:admin',
-            'token-session:admin'
-          ]
-        }
-      })
+      body: JSON.stringify(okResponse('trace-login-admin', adminSession()))
     });
   });
 
   await page.route('**/api/v1/knowledge-bases', async (route) => {
     await route.fulfill({
       contentType: 'application/json',
-      body: JSON.stringify({
-        code: 'OK',
-        message: 'success',
-        traceId: 'trace-kb-empty',
-        data: []
-      })
+      body: JSON.stringify(okResponse('trace-kb-empty', []))
     });
   });
 
   await page.route('**/api/v1/chat/history**', async (route) => {
     await route.fulfill({
       contentType: 'application/json',
-      body: JSON.stringify({
-        code: 'OK',
-        message: 'success',
-        traceId: 'trace-history-empty',
-        data: []
-      })
+      body: JSON.stringify(okResponse('trace-history-empty', []))
     });
   });
 
   await page.route('**/api/v1/dashboard/operations', async (route) => {
     await route.fulfill({
       contentType: 'application/json',
-      body: JSON.stringify({
-        code: 'OK',
-        message: 'success',
-        traceId: 'trace-dashboard',
-        data: {
-          knowledgeBaseCount: 0,
-          documentCount: 0,
-          pendingIndexTaskCount: 0,
-          runningIndexTaskCount: 0,
-          failedIndexTaskCount: 0,
-          failedDocumentCount: 0,
-          pendingApprovalCount: 0,
-          activeHighRiskTicketCount: 0,
-          pendingHighRiskTicketCount: 0,
-          activeTokenSessionCount: 1,
-          totalIndexTaskCount: 0,
-          indexFailureRate: 0,
-          indexBacklogPressure: 0,
-          operationsBacklogCount: 0,
-          healthLevel: 'HEALTHY',
-          alertCount: 0,
-          healthSummary: '当前无待处理运营告警。',
-          recommendedActions: ['保持日常巡检。'],
-          generatedAt: '2026-06-06T02:00:00'
-        }
-      })
+      body: JSON.stringify(okResponse('trace-dashboard', healthyDashboard()))
     });
   });
+}
+
+test('shows AI runtime configuration without exposing secrets', async ({ page }) => {
+  const runtimeRequests: string[] = [];
+  await routeAdminShell(page);
 
   await page.route('**/api/v1/ai/runtime', async (route) => {
     runtimeRequests.push(new URL(route.request().url()).pathname);
     await route.fulfill({
       contentType: 'application/json',
-      body: JSON.stringify({
-        code: 'OK',
-        message: 'success',
-        traceId: 'trace-ai-runtime',
-        data: {
-          activeProfiles: ['mysql', 'ai-openai'],
-          chat: {
-            enabled: true,
-            modelAvailable: true,
-            credentialConfigured: true,
-            provider: 'openai',
-            baseUrl: 'https://relay.example.com/v1',
-            path: '/chat/completions',
-            model: 'gpt-5.4'
-          },
-          embedding: {
-            enabled: false,
-            modelAvailable: false,
-            credentialConfigured: true,
-            provider: 'none',
-            baseUrl: 'https://relay.example.com/v1',
-            path: '/embeddings',
-            model: 'text-embedding-3-small'
-          },
-          readinessLevel: 'READY',
-          warnings: ['AI runtime configuration is ready for enabled components.'],
-          generatedAt: '2026-06-06T02:10:00'
-        }
-      })
+      body: JSON.stringify(okResponse('trace-ai-runtime', readyAiRuntimeStatus()))
     });
   });
 
@@ -145,4 +144,37 @@ test('shows AI runtime configuration without exposing secrets', async ({ page })
   await expect(page.getByText('AI 运行配置已刷新')).toBeVisible();
 
   expect(runtimeRequests).toEqual(['/api/v1/ai/runtime', '/api/v1/ai/runtime']);
+});
+
+test('keeps AI runtime refresh single-flight while loading', async ({ page }) => {
+  let runtimeRequestCount = 0;
+  let releaseRuntimeResponse: (() => void) | null = null;
+  await routeAdminShell(page);
+
+  await page.route('**/api/v1/ai/runtime', async (route) => {
+    runtimeRequestCount += 1;
+    if (runtimeRequestCount === 1) {
+      await new Promise<void>((resolve) => {
+        releaseRuntimeResponse = resolve;
+      });
+    }
+    await route.fulfill({
+      contentType: 'application/json',
+      body: JSON.stringify(okResponse('trace-ai-runtime', readyAiRuntimeStatus()))
+    });
+  });
+
+  await page.goto('/');
+  await page.getByRole('button', { name: '进入工作台' }).click();
+  await page.getByRole('link', { name: 'AI配置' }).click();
+
+  await expect(page.getByText('正在读取 AI 运行状态...')).toBeVisible();
+  await expect(page.getByRole('button', { name: '刷新中...' })).toBeDisabled();
+  await page.getByRole('button', { name: '刷新中...' }).click({ force: true });
+  expect(runtimeRequestCount).toBe(1);
+
+  releaseRuntimeResponse?.();
+  await expect(page.getByRole('button', { name: '刷新配置' })).toBeEnabled();
+  await expect(page.getByText('可用')).toBeVisible();
+  expect(runtimeRequestCount).toBe(1);
 });

@@ -6,6 +6,7 @@ export function DashboardMetrics({
   askResult,
   submitResult,
   operationsDashboard,
+  operationsDashboardLoading,
   canReadDashboard,
   onRefreshOperationsDashboard
 }: {
@@ -13,6 +14,7 @@ export function DashboardMetrics({
   askResult: AskResult | null;
   submitResult: SubmitTicketResult | null;
   operationsDashboard: OperationsDashboard | null;
+  operationsDashboardLoading: boolean;
   canReadDashboard: boolean;
   onRefreshOperationsDashboard: () => void;
 }) {
@@ -91,9 +93,9 @@ export function DashboardMetrics({
       )}
       {canReadDashboard && (
         <div className="metric-toolbar">
-          <span>运营指标更新时间：{generatedAt}</span>
-          <button type="button" onClick={onRefreshOperationsDashboard}>
-            刷新运营指标
+          <span>{operationsDashboardLoading ? '运营指标正在刷新...' : `运营指标更新时间：${generatedAt}`}</span>
+          <button type="button" onClick={onRefreshOperationsDashboard} disabled={operationsDashboardLoading}>
+            {operationsDashboardLoading ? '刷新中...' : '刷新运营指标'}
           </button>
         </div>
       )}
