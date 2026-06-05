@@ -1,0 +1,61 @@
+spring:
+  autoconfigure:
+    exclude:
+      - org.springframework.ai.model.chat.client.autoconfigure.ChatClientAutoConfiguration
+  application:
+    name: knowledge-ticket-agent
+  ai:
+    model:
+      chat: none
+      embedding: none
+      image: none
+      moderation: none
+      audio:
+        speech: none
+        transcription: none
+  datasource:
+    url: jdbc:h2:file:./data/agentdb;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DEFAULT_NULL_ORDERING=HIGH;AUTO_SERVER=TRUE
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+  flyway:
+    enabled: true
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+app:
+  storage:
+    base-dir: storage
+  document-index:
+    core-pool-size: 2
+    max-pool-size: 4
+    queue-capacity: 50
+    max-attempts: 3
+    batch-size: 5
+    poll-delay-ms: 5000
+    stale-timeout-seconds: 300
+  ai:
+    chat:
+      enabled: false
+    embedding:
+      enabled: false
+  rag:
+    min-citation-count: 1
+    min-top-score: 1.0
+  security:
+    token-ttl-seconds: 7200
+    refresh-token-ttl-seconds: 604800
+    expired-token-cleanup-delay-ms: 600000
+    expired-token-cleanup-initial-delay-ms: 60000
+    max-failed-login-attempts: 5
+    login-lockout-minutes: 15

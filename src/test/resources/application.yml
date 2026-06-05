@@ -1,0 +1,45 @@
+spring:
+  ai:
+    model:
+      chat: none
+      embedding: none
+      image: none
+      moderation: none
+      audio:
+        speech: none
+        transcription: none
+  datasource:
+    url: jdbc:h2:mem:testdb;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DEFAULT_NULL_ORDERING=HIGH
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+  flyway:
+    enabled: true
+app:
+  storage:
+    base-dir: target/test-storage
+  document-index:
+    core-pool-size: 1
+    max-pool-size: 2
+    queue-capacity: 20
+    max-attempts: 2
+    batch-size: 2
+    poll-delay-ms: 250
+    stale-timeout-seconds: 30
+  ai:
+    chat:
+      enabled: false
+    embedding:
+      enabled: false
+  rag:
+    min-citation-count: 1
+    min-top-score: 1.0
+  security:
+    token-ttl-seconds: 7200
+    refresh-token-ttl-seconds: 604800
+    max-failed-login-attempts: 5
+    login-lockout-minutes: 15

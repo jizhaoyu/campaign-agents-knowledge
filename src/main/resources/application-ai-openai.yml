@@ -1,0 +1,22 @@
+spring:
+  ai:
+    model:
+      chat: openai
+      embedding: ${OPENAI_EMBEDDING_PROVIDER:none}
+    openai:
+      api-key: ${OPENAI_API_KEY:${OPENAI_COMPATIBLE_API_KEY:}}
+      base-url: ${OPENAI_BASE_URL:https://api.openai.com/v1}
+      chat:
+        completions-path: ${OPENAI_CHAT_COMPLETIONS_PATH:/chat/completions}
+        options:
+          model: ${OPENAI_CHAT_MODEL:gpt-5.4}
+      embedding:
+        embeddings-path: ${OPENAI_EMBEDDINGS_PATH:/embeddings}
+        options:
+          model: ${OPENAI_EMBEDDING_MODEL:text-embedding-3-small}
+app:
+  ai:
+    chat:
+      enabled: true
+    embedding:
+      enabled: ${OPENAI_EMBEDDING_ENABLED:false}
