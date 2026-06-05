@@ -82,6 +82,19 @@
 
 ## 快速启动
 
+### 持续集成
+
+仓库包含 GitHub Actions 工作流 `.github/workflows/ci.yml`，push 到 `main` 或创建 PR 时会执行：
+
+- `mvn test`
+- `npm ci`
+- `npm run build`
+- `npx playwright test`
+- `mvn -Pfrontend -DskipTests package`
+- Jar 内置前端静态资源检查
+
+CI 不连接真实 MySQL；`MysqlSchemaEntityAlignmentTest` 只静态读取 `src/main/resources/db/mysql/*.sql` 和 JPA 实体注解，用来防止迁移脚本漏字段。
+
 ### 运行测试
 
 ```bash
