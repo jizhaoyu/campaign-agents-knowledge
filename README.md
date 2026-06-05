@@ -171,6 +171,26 @@ mvn -Pfrontend package
 
 生成的 Jar 会内置 `index.html`、`favicon.svg`、`assets/index.js` 和 `assets/index.css`。后端会对 `/dashboard`、`/knowledge`、`/chat`、`/tickets`、`/approvals`、`/ai-config`、`/users`、`/sessions`、`/audits` 做 SPA fallback，同时继续保护 `/api/**` 接口。
 
+### Docker Compose 单机启动
+
+仓库提供 `Dockerfile` 和 `docker-compose.yml`，用于构建前后端一体化镜像并启动 MySQL 8.4：
+
+```bash
+docker compose up --build
+```
+
+默认会创建 `agentdb` 业务库，应用使用 `mysql` profile，Flyway 会在容器内对该业务库执行 `src/main/resources/db/mysql` 迁移。上传文件保存在 `app-storage` volume，MySQL 数据保存在 `mysql-data` volume。需要启用 OpenAI-compatible 模式时可设置：
+
+```powershell
+$env:SPRING_PROFILES_ACTIVE='mysql,ai-openai'
+$env:OPENAI_API_KEY='your-api-key-or-relay-key'
+$env:OPENAI_BASE_URL='https://your-relay.example.com/v1'
+$env:OPENAI_CHAT_MODEL='gpt-5.5'
+docker compose up --build
+```
+
+如果只是让自动化助手核对配置文件，本步骤不会连接或写入你的本机 MySQL；真正执行 `docker compose up` 会由容器内 MySQL 和应用完成建库/迁移。
+
 ### 启动 OpenAI-compatible 模式
 
 PowerShell:

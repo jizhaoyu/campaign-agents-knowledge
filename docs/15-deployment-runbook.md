@@ -72,6 +72,37 @@ java -jar target/knowledge-ticket-agent-0.0.1-SNAPSHOT.jar
 
 `frontend` profile 只复制当前构建需要的 `index.html`、`favicon.svg`、`assets/index.js` 和 `assets/index.css`，并会先清理 `target/classes/static`，避免旧 hash 静态资源进入 Jar。应用会对 `/dashboard`、`/knowledge`、`/chat`、`/tickets`、`/approvals`、`/ai-config`、`/users`、`/sessions`、`/audits` 做 SPA fallback；`/api/**` 仍按 Bearer token 鉴权。
 
+### Docker Compose 单机部署
+
+仓库提供 `Dockerfile` 和 `docker-compose.yml`。镜像构建分三阶段：
+
+1. Node 22 构建 `frontend/dist`
+2. Maven + JDK 17 使用 `frontend` profile 打包 Spring Boot Jar
+3. JRE 17 运行最终 Jar
+
+启动命令：
+
+```powershell
+docker compose up --build
+```
+
+默认服务：
+
+- `mysql`：MySQL 8.4，创建 `agentdb` 业务库，数据写入 `mysql-data` volume
+- `app`：Spring Boot 应用，默认 `SPRING_PROFILES_ACTIVE=mysql`，上传文件写入 `app-storage` volume
+
+如需同时启用 OpenAI-compatible：
+
+```powershell
+$env:SPRING_PROFILES_ACTIVE='mysql,ai-openai'
+$env:OPENAI_API_KEY='your-api-key-or-relay-key'
+$env:OPENAI_BASE_URL='https://your-relay.example.com/v1'
+$env:OPENAI_CHAT_MODEL='gpt-5.5'
+docker compose up --build
+```
+
+注意：运行 `docker compose up` 会在容器内 MySQL 中创建业务库并由 Flyway 建表/写入种子数据；自动化助手在未获授权时不执行该命令，只维护和静态校验部署文件。
+
 ### MySQL 启动
 
 业务库名称建议使用 `agentdb`。在未明确获得授权前，自动化助手只能做 MySQL 读操作核对，不执行建库、迁移、删除、更新等写操作。
