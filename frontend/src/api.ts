@@ -120,6 +120,10 @@ export type OperationsDashboard = {
   activeHighRiskTicketCount: number;
   pendingHighRiskTicketCount: number;
   activeTokenSessionCount: number;
+  totalIndexTaskCount: number;
+  indexFailureRate: number;
+  indexBacklogPressure: number;
+  operationsBacklogCount: number;
   healthLevel: 'HEALTHY' | 'ATTENTION' | 'CRITICAL';
   alertCount: number;
   healthSummary: string;

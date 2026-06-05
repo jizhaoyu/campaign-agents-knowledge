@@ -74,6 +74,7 @@ class OperationsDashboardSmokeTest {
         long baselinePendingTasks = documentIndexTaskRepository.countByStatus(DocumentIndexTaskStatus.PENDING);
         long baselineRunningTasks = documentIndexTaskRepository.countByStatus(DocumentIndexTaskStatus.RUNNING);
         long baselineFailedTasks = documentIndexTaskRepository.countByStatus(DocumentIndexTaskStatus.FAILED);
+        long baselineTotalIndexTasks = documentIndexTaskRepository.count();
         long baselineFailedDocuments = documentRecordRepository.countByIndexStatus(ProcessingStatus.FAILED);
         long baselinePendingApprovals = approvalTaskRepository.countByStatus(ApprovalStatus.PENDING);
         long baselineActiveHighRiskTickets = ticketRepository.countByPriorityAndStatusIn(
@@ -85,6 +86,20 @@ class OperationsDashboardSmokeTest {
                 TicketStatus.PENDING_APPROVAL
         );
         long baselineActiveSessions = authTokenSessionRepository.countActiveSessions(LocalDateTime.now());
+        long expectedDocumentCount = baselineDocuments + 2;
+        long expectedPendingTasks = baselinePendingTasks + 1;
+        long expectedRunningTasks = baselineRunningTasks + 1;
+        long expectedFailedTasks = baselineFailedTasks + 1;
+        long expectedTotalIndexTasks = baselineTotalIndexTasks + 3;
+        long expectedPendingApprovals = baselinePendingApprovals + 1;
+        long expectedPendingHighRiskTickets = baselinePendingHighRiskTickets + 1;
+        double expectedFailureRate = ratio(expectedFailedTasks, expectedTotalIndexTasks);
+        double expectedBacklogPressure = ratio(expectedPendingTasks + expectedRunningTasks, Math.max(1L, expectedDocumentCount));
+        long expectedOperationsBacklog = expectedPendingTasks
+                + expectedRunningTasks
+                + expectedFailedTasks
+                + expectedPendingApprovals
+                + expectedPendingHighRiskTickets;
 
         seedDashboardMetrics();
 
@@ -92,15 +107,19 @@ class OperationsDashboardSmokeTest {
                         .header("Authorization", "Bearer " + adminToken))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.knowledgeBaseCount").value(baselineKnowledgeBases + 1))
-                .andExpect(jsonPath("$.data.documentCount").value(baselineDocuments + 2))
-                .andExpect(jsonPath("$.data.pendingIndexTaskCount").value(baselinePendingTasks + 1))
-                .andExpect(jsonPath("$.data.runningIndexTaskCount").value(baselineRunningTasks + 1))
-                .andExpect(jsonPath("$.data.failedIndexTaskCount").value(baselineFailedTasks + 1))
+                .andExpect(jsonPath("$.data.documentCount").value(expectedDocumentCount))
+                .andExpect(jsonPath("$.data.pendingIndexTaskCount").value(expectedPendingTasks))
+                .andExpect(jsonPath("$.data.runningIndexTaskCount").value(expectedRunningTasks))
+                .andExpect(jsonPath("$.data.failedIndexTaskCount").value(expectedFailedTasks))
                 .andExpect(jsonPath("$.data.failedDocumentCount").value(baselineFailedDocuments + 1))
-                .andExpect(jsonPath("$.data.pendingApprovalCount").value(baselinePendingApprovals + 1))
+                .andExpect(jsonPath("$.data.pendingApprovalCount").value(expectedPendingApprovals))
                 .andExpect(jsonPath("$.data.activeHighRiskTicketCount").value(baselineActiveHighRiskTickets + 2))
-                .andExpect(jsonPath("$.data.pendingHighRiskTicketCount").value(baselinePendingHighRiskTickets + 1))
+                .andExpect(jsonPath("$.data.pendingHighRiskTicketCount").value(expectedPendingHighRiskTickets))
                 .andExpect(jsonPath("$.data.activeTokenSessionCount").value(baselineActiveSessions + 1))
+                .andExpect(jsonPath("$.data.totalIndexTaskCount").value(expectedTotalIndexTasks))
+                .andExpect(jsonPath("$.data.indexFailureRate").value(org.hamcrest.Matchers.closeTo(expectedFailureRate, 0.001D)))
+                .andExpect(jsonPath("$.data.indexBacklogPressure").value(org.hamcrest.Matchers.closeTo(expectedBacklogPressure, 0.001D)))
+                .andExpect(jsonPath("$.data.operationsBacklogCount").value(expectedOperationsBacklog))
                 .andExpect(jsonPath("$.data.healthLevel").value("CRITICAL"))
                 .andExpect(jsonPath("$.data.alertCount").value(org.hamcrest.Matchers.greaterThan(0)))
                 .andExpect(jsonPath("$.data.healthSummary").value(org.hamcrest.Matchers.containsString("立即处理")))
@@ -194,6 +213,14 @@ class OperationsDashboardSmokeTest {
 
     private String randomHash() {
         return UUID.randomUUID().toString().replace("-", "") + UUID.randomUUID().toString().replace("-", "");
+    }
+
+    private double ratio(long numerator, long denominator) {
+        if (denominator <= 0) {
+            return 0D;
+        }
+        double value = (double) numerator / (double) denominator;
+        return Math.round(value * 100D) / 100D;
     }
 
     private String login(String username, String password) throws Exception {

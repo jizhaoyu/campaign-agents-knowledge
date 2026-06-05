@@ -75,6 +75,10 @@ test('loads operations metrics for dashboard readers', async ({ page }) => {
           activeHighRiskTicketCount: 6,
           pendingHighRiskTicketCount: 3,
           activeTokenSessionCount: 7,
+          totalIndexTaskCount: 10,
+          indexFailureRate: 0.2,
+          indexBacklogPressure: 0.42,
+          operationsBacklogCount: 15,
           healthLevel: 'CRITICAL',
           alertCount: 3,
           healthSummary: '存在需要立即处理的索引失败或高风险阻塞项。',
@@ -95,10 +99,19 @@ test('loads operations metrics for dashboard readers', async ({ page }) => {
   await expect(page.getByText('等待 4 / 运行 1')).toBeVisible();
   await expect(page.getByText('索引失败', { exact: true })).toBeVisible();
   await expect(page.getByText('失败任务 2 / 文档 12')).toBeVisible();
+  await expect(page.getByText('失败率', { exact: true })).toBeVisible();
+  await expect(page.getByText('20%', { exact: true })).toBeVisible();
+  await expect(page.getByText('失败 2 / 索引任务 10')).toBeVisible();
+  await expect(page.getByText('积压压力', { exact: true })).toBeVisible();
+  await expect(page.getByText('42%', { exact: true })).toBeVisible();
+  await expect(page.getByText('待处理 5 / 文档 12')).toBeVisible();
   await expect(page.getByText('全局待处理审批任务')).toBeVisible();
+  await expect(page.getByText('运营待办', { exact: true })).toBeVisible();
+  await expect(page.getByText('索引、审批和高风险阻塞合计')).toBeVisible();
   await expect(page.getByText('运营健康')).toBeVisible();
   await expect(page.getByText('3 个待处理提醒')).toBeVisible();
   await expect(page.getByText('运营摘要：存在需要立即处理的索引失败或高风险阻塞项。')).toBeVisible();
+  await expect(page.getByText('失败率 20% / 积压压力 42%')).toBeVisible();
   await expect(page.getByText('处理失败索引任务和失败文档，优先查看失败原因后重试或修正文档格式。')).toBeVisible();
   await expect(page.getByText('待审批 3 / 已开放或待批')).toBeVisible();
   await expect(page.getByText('未吊销且未过期 Token 会话')).toBeVisible();

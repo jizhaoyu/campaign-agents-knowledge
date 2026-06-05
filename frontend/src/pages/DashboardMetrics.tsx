@@ -26,6 +26,7 @@ export function DashboardMetrics({
     CRITICAL: '紧急'
   } as const;
   const healthLevel = operationsDashboard?.healthLevel ?? 'HEALTHY';
+  const percent = (value: number) => `${Math.round(value * 100)}%`;
 
   return (
     <section id="总览" className="metric-section">
@@ -46,7 +47,18 @@ export function DashboardMetrics({
               value={operationsDashboard.failedDocumentCount}
               caption={`失败任务 ${operationsDashboard.failedIndexTaskCount} / 文档 ${operationsDashboard.documentCount}`}
             />
+            <Metric
+              title="失败率"
+              value={percent(operationsDashboard.indexFailureRate)}
+              caption={`失败 ${operationsDashboard.failedIndexTaskCount} / 索引任务 ${operationsDashboard.totalIndexTaskCount}`}
+            />
+            <Metric
+              title="积压压力"
+              value={percent(operationsDashboard.indexBacklogPressure)}
+              caption={`待处理 ${operationsDashboard.pendingIndexTaskCount + operationsDashboard.runningIndexTaskCount} / 文档 ${operationsDashboard.documentCount}`}
+            />
             <Metric title="待审批" value={operationsDashboard.pendingApprovalCount} caption="全局待处理审批任务" />
+            <Metric title="运营待办" value={operationsDashboard.operationsBacklogCount} caption="索引、审批和高风险阻塞合计" />
             <Metric
               title="运营健康"
               value={healthLabelByLevel[healthLevel]}
@@ -65,8 +77,11 @@ export function DashboardMetrics({
         <div className={`health-panel ${operationsDashboard.healthLevel.toLowerCase()}`}>
           <div>
             <strong>运营摘要：{operationsDashboard.healthSummary}</strong>
-            <span>建议动作</span>
+            <span>
+              失败率 {percent(operationsDashboard.indexFailureRate)} / 积压压力 {percent(operationsDashboard.indexBacklogPressure)}
+            </span>
           </div>
+          <span>建议动作</span>
           <ul>
             {operationsDashboard.recommendedActions.map((action) => (
               <li key={action}>{action}</li>

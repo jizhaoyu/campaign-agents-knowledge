@@ -553,6 +553,10 @@ Query：
     "activeHighRiskTicketCount": 6,
     "pendingHighRiskTicketCount": 3,
     "activeTokenSessionCount": 7,
+    "totalIndexTaskCount": 10,
+    "indexFailureRate": 0.2,
+    "indexBacklogPressure": 0.42,
+    "operationsBacklogCount": 15,
     "healthLevel": "CRITICAL",
     "alertCount": 3,
     "healthSummary": "存在需要立即处理的索引失败或高风险阻塞项。",
@@ -566,7 +570,7 @@ Query：
 }
 ```
 
-`healthLevel` 可取 `HEALTHY` / `ATTENTION` / `CRITICAL`。`recommendedActions` 由后端根据失败索引、待审批、高风险工单和队列堆积情况生成，用于前端直接展示运营待办。
+`healthLevel` 可取 `HEALTHY` / `ATTENTION` / `CRITICAL`。`indexFailureRate` 表示失败索引任务数 / 全部索引任务数，`indexBacklogPressure` 表示待处理索引任务数 / 文档数，均按两位小数返回；`operationsBacklogCount` 汇总待处理/运行/失败索引任务、待审批任务和待审批高风险工单。`recommendedActions` 由后端根据失败索引、失败率、积压压力、待审批、高风险工单和队列堆积情况生成，用于前端直接展示运营待办。
 
 ## AI 运行配置接口
 

@@ -12,8 +12,8 @@ import com.enterprise.agentplatform.domain.repository.DocumentIndexTaskRepositor
 import com.enterprise.agentplatform.domain.repository.DocumentRecordRepository;
 import com.enterprise.agentplatform.domain.repository.KnowledgeBaseRepository;
 import com.enterprise.agentplatform.domain.repository.TicketRepository;
-import java.util.ArrayList;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -52,6 +52,7 @@ public class OperationsDashboardService {
         long pendingIndexTaskCount = documentIndexTaskRepository.countByStatus(DocumentIndexTaskStatus.PENDING);
         long runningIndexTaskCount = documentIndexTaskRepository.countByStatus(DocumentIndexTaskStatus.RUNNING);
         long failedIndexTaskCount = documentIndexTaskRepository.countByStatus(DocumentIndexTaskStatus.FAILED);
+        long totalIndexTaskCount = documentIndexTaskRepository.count();
         long failedDocumentCount = documentRecordRepository.countByIndexStatus(ProcessingStatus.FAILED);
         long pendingApprovalCount = approvalTaskRepository.countByStatus(ApprovalStatus.PENDING);
         long pendingHighRiskTickets = ticketRepository.countByPriorityAndStatus(
@@ -63,6 +64,13 @@ public class OperationsDashboardService {
                 List.of(TicketStatus.PENDING_APPROVAL, TicketStatus.OPEN)
         );
         long activeTokenSessionCount = authTokenSessionRepository.countActiveSessions(now);
+        double indexFailureRate = ratio(failedIndexTaskCount, totalIndexTaskCount);
+        double indexBacklogPressure = ratio(pendingIndexTaskCount + runningIndexTaskCount, Math.max(1L, documentCount));
+        long operationsBacklogCount = pendingIndexTaskCount
+                + runningIndexTaskCount
+                + failedIndexTaskCount
+                + pendingApprovalCount
+                + pendingHighRiskTickets;
         HealthSnapshot health = summarizeHealth(
                 pendingIndexTaskCount,
                 runningIndexTaskCount,
@@ -70,7 +78,9 @@ public class OperationsDashboardService {
                 failedDocumentCount,
                 pendingApprovalCount,
                 activeHighRiskTickets,
-                pendingHighRiskTickets
+                pendingHighRiskTickets,
+                indexFailureRate,
+                indexBacklogPressure
         );
 
         return new OperationsDashboardResponse(
@@ -84,6 +94,10 @@ public class OperationsDashboardService {
                 activeHighRiskTickets,
                 pendingHighRiskTickets,
                 activeTokenSessionCount,
+                totalIndexTaskCount,
+                indexFailureRate,
+                indexBacklogPressure,
+                operationsBacklogCount,
                 health.level(),
                 health.alertCount(),
                 health.summary(),
@@ -99,16 +113,24 @@ public class OperationsDashboardService {
             long failedDocumentCount,
             long pendingApprovalCount,
             long activeHighRiskTickets,
-            long pendingHighRiskTickets
+            long pendingHighRiskTickets,
+            double indexFailureRate,
+            double indexBacklogPressure
     ) {
         List<String> actions = new ArrayList<>();
         if (failedIndexTaskCount > 0 || failedDocumentCount > 0) {
             actions.add("处理失败索引任务和失败文档，优先查看失败原因后重试或修正文档格式。");
         }
+        if (indexFailureRate >= 0.25D) {
+            actions.add("索引失败率偏高，请复盘最近上传文档格式、解析日志和重试结果。");
+        }
         if (pendingIndexTaskCount > 10 && runningIndexTaskCount == 0) {
             actions.add("索引队列堆积且没有运行任务，请检查后台 worker 是否正常领取任务。");
         } else if (pendingIndexTaskCount > 10) {
             actions.add("索引队列堆积较多，请评估是否需要提高 worker 并发或拆分批次。");
+        }
+        if (indexBacklogPressure >= 0.5D) {
+            actions.add("索引积压压力偏高，请降低批量上传节奏或增加 worker 处理能力。");
         }
         if (pendingApprovalCount > 0) {
             actions.add("存在待审批任务，请安排审批人处理以免高风险工单阻塞。");
@@ -127,6 +149,14 @@ public class OperationsDashboardService {
             return new HealthSnapshot("CRITICAL", alertCount, "存在需要立即处理的索引失败或高风险阻塞项。", actions);
         }
         return new HealthSnapshot("ATTENTION", alertCount, "存在需要跟进的运营待办。", actions);
+    }
+
+    private double ratio(long numerator, long denominator) {
+        if (denominator <= 0) {
+            return 0D;
+        }
+        double value = (double) numerator / (double) denominator;
+        return Math.round(value * 100D) / 100D;
     }
 
     private record HealthSnapshot(
