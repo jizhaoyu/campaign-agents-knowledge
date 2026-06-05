@@ -179,7 +179,7 @@ mvn -Pfrontend package
 docker compose up --build
 ```
 
-默认会创建 `agentdb` 业务库，应用使用 `mysql` profile，Flyway 会在容器内对该业务库执行 `src/main/resources/db/mysql` 迁移。上传文件保存在 `app-storage` volume，MySQL 数据保存在 `mysql-data` volume。需要启用 OpenAI-compatible 模式时可设置：
+默认会创建 `agentdb` 业务库，应用使用 `mysql` profile，Flyway 会在容器内对该业务库执行 `src/main/resources/db/mysql` 迁移。Compose 会保留 root 密码用于 MySQL 初始化和健康检查，应用连接默认使用专用账号 `agent_app`，可通过 `MYSQL_APP_USER` 和 `MYSQL_APP_PASSWORD` 覆盖。上传文件保存在 `app-storage` volume，MySQL 数据保存在 `mysql-data` volume。需要启用 OpenAI-compatible 模式时可设置：
 
 ```powershell
 $env:SPRING_PROFILES_ACTIVE='mysql,ai-openai'

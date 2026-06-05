@@ -28,6 +28,9 @@
 - `MYSQL_JDBC_URL`
 - `MYSQL_USERNAME`
 - `MYSQL_PASSWORD`
+- `MYSQL_ROOT_PASSWORD`
+- `MYSQL_APP_USER`
+- `MYSQL_APP_PASSWORD`
 - `REDIS_HOST`
 - `MINIO_ENDPOINT`
 - `MINIO_ACCESS_KEY`
@@ -88,8 +91,10 @@ docker compose up --build
 
 默认服务：
 
-- `mysql`：MySQL 8.4，创建 `agentdb` 业务库，数据写入 `mysql-data` volume
-- `app`：Spring Boot 应用，默认 `SPRING_PROFILES_ACTIVE=mysql`，上传文件写入 `app-storage` volume
+- `mysql`：MySQL 8.4，创建 `agentdb` 业务库和专用应用账号，数据写入 `mysql-data` volume
+- `app`：Spring Boot 应用，默认 `SPRING_PROFILES_ACTIVE=mysql`，使用 `MYSQL_APP_USER` / `MYSQL_APP_PASSWORD` 连接 MySQL，上传文件写入 `app-storage` volume
+
+root 密码只用于 MySQL 初始化和健康检查。应用容器不要使用 root 账号连接业务库；默认应用账号为 `agent_app`，生产环境必须通过环境变量替换默认密码。
 
 如需同时启用 OpenAI-compatible：
 

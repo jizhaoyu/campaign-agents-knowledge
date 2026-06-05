@@ -12,8 +12,8 @@
 - 支持前端客户端路由：知识库、问答、工单、审批、用户、会话和审计拥有独立 URL，刷新和浏览器前进后退保持当前页面
 - 支持前端管理入口细粒度权限：用户、token 会话和审计入口分别按 `user:admin`、`token-session:admin`、`audit:read` 显示和请求
 - 支持前后端一体化构建：前端产物可通过 `mvn -Pfrontend package` 打进 Spring Boot Jar，后端提供 SPA fallback 且继续保护 `/api/**`
-- 支持 Docker Compose 单机部署骨架：多阶段 Dockerfile 构建前端和 Spring Boot Jar，Compose 声明 MySQL 业务库、应用环境变量、健康检查和持久化 volume
-- 支持部署文件静态守护测试：校验 Dockerfile 构建阶段、Compose MySQL/app 服务、健康检查和 volume 契约
+- 支持 Docker Compose 单机部署骨架：多阶段 Dockerfile 构建前端和 Spring Boot Jar，Compose 声明 MySQL 业务库、专用应用账号、应用环境变量、健康检查和持久化 volume
+- 支持部署文件静态守护测试：校验 Dockerfile 构建阶段、Compose MySQL/app 服务、专用应用账号、健康检查和 volume 契约
 - 支持审计调用链回看：前端可按 traceId、事件、对象和对象 ID 查询审计日志，时间线展示 payload 并支持复制 traceId
 - 支持 AI 运行配置页：管理员可查看 OpenAI-compatible chat/embedding 启用状态、baseUrl、path、model、凭证配置状态和模型 Bean 可用性，且不暴露 API key
 - 支持文档列表服务端分页：文件名搜索、索引状态过滤和分页参数校验在后端生效，前端文档管理页可翻页
