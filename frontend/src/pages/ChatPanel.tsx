@@ -1,6 +1,7 @@
 import { FormEvent } from 'react';
 import { AskResult, ChatHistoryItem, Citation } from '../api';
 import { CardHeading } from '../components/CardHeading';
+import { SkeletonBlock } from '../components/SkeletonBlock';
 
 const demoQuestions = [
   'VPN 无法连接应该怎么处理？',
@@ -11,6 +12,8 @@ const demoQuestions = [
 export function ChatPanel({
   askResult,
   chatHistory,
+  asking,
+  chatHistoryLoading,
   onAsk,
   onRefreshHistory,
   onRestoreHistoryItem,
@@ -18,6 +21,8 @@ export function ChatPanel({
 }: {
   askResult: AskResult | null;
   chatHistory: ChatHistoryItem[];
+  asking: boolean;
+  chatHistoryLoading: boolean;
   onAsk: (event: FormEvent<HTMLFormElement>) => void;
   onRefreshHistory: () => void;
   onRestoreHistoryItem: (item: ChatHistoryItem) => void;
@@ -45,15 +50,17 @@ export function ChatPanel({
               </button>
             ))}
           </div>
-          <button type="submit" className="primary-action">
-            提问
+          <button type="submit" className="primary-action" disabled={asking}>
+            {asking ? '生成中...' : '提问'}
           </button>
         </form>
       </article>
 
       <article className="card answer-card">
         <CardHeading marker="AI" title="回答与引用" />
-        {askResult ? (
+        {asking && !askResult ? (
+          <SkeletonBlock label="回答生成骨架" lines={4} variant="panel" />
+        ) : askResult ? (
           <>
             <p className="answer-text">{askResult.answer}</p>
             <div className="tag-row">
@@ -85,12 +92,14 @@ export function ChatPanel({
           marker="HIS"
           title="最近问答"
           action={
-            <button type="button" onClick={onRefreshHistory}>
-              刷新历史
+            <button type="button" onClick={onRefreshHistory} disabled={chatHistoryLoading}>
+              {chatHistoryLoading ? '刷新中...' : '刷新历史'}
             </button>
           }
         />
-        {chatHistory.length ? (
+        {chatHistoryLoading && !chatHistory.length ? (
+          <SkeletonBlock label="问答历史骨架" lines={3} variant="panel" />
+        ) : chatHistory.length ? (
           <div className="history-list">
             {chatHistory.map((item) => (
               <button

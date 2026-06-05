@@ -84,6 +84,8 @@ function App() {
   const {
     askResult,
     chatHistory,
+    asking,
+    chatHistoryLoading,
     refreshChatHistory,
     ask,
     restoreChatHistoryItem,
@@ -102,6 +104,9 @@ function App() {
     ticketDraft,
     submitResult,
     similarTickets,
+    ticketDraftLoading,
+    ticketSubmitLoading,
+    similarTicketsLoading,
     generateTicketDraft,
     submitTicket,
     loadSimilarTickets,
@@ -323,6 +328,8 @@ function App() {
             <ChatPanel
               askResult={askResult}
               chatHistory={chatHistory}
+              asking={asking}
+              chatHistoryLoading={chatHistoryLoading}
               onAsk={ask}
               onRefreshHistory={() => void refreshChatHistory(token)}
               onRestoreHistoryItem={restoreChatHistoryItem}
@@ -335,6 +342,9 @@ function App() {
               ticketDraft={ticketDraft}
               submitResult={submitResult}
               similarTickets={similarTickets}
+              ticketDraftLoading={ticketDraftLoading}
+              ticketSubmitLoading={ticketSubmitLoading}
+              similarTicketsLoading={similarTicketsLoading}
               onGenerateDraft={generateTicketDraft}
               onLoadSimilarTickets={loadSimilarTickets}
               onSubmitTicket={submitTicket}

@@ -28,28 +28,40 @@ export function useTicketWorkspace({
   const [ticketDraft, setTicketDraft] = useState<TicketDraft | null>(null);
   const [submitResult, setSubmitResult] = useState<SubmitTicketResult | null>(null);
   const [similarTickets, setSimilarTickets] = useState<SimilarTicket[]>([]);
+  const [ticketDraftLoading, setTicketDraftLoading] = useState(false);
+  const [ticketSubmitLoading, setTicketSubmitLoading] = useState(false);
+  const [similarTicketsLoading, setSimilarTicketsLoading] = useState(false);
 
   function resetTicketWorkspace() {
     setTicketDraft(null);
     setSubmitResult(null);
     setSimilarTickets([]);
+    setTicketDraftLoading(false);
+    setTicketSubmitLoading(false);
+    setSimilarTicketsLoading(false);
   }
 
   async function generateTicketDraft() {
-    if (!token || !askResult) {
+    if (!token || !askResult || ticketDraftLoading) {
       return;
     }
+    setTicketDraftLoading(true);
     try {
       const result = await workspaceApi.createTicketDraft(authRequest, token, askResult.conversationId);
       setTicketDraft(result.data);
       setNotice({ tone: 'ok', text: '工单草稿已生成' });
     } catch (error) {
       handleRequestError(error);
+    } finally {
+      setTicketDraftLoading(false);
     }
   }
 
   async function submitTicket(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (ticketSubmitLoading) {
+      return;
+    }
     if (!token || !ticketDraft) {
       return;
     }
@@ -66,6 +78,7 @@ export function useTicketWorkspace({
       setNotice({ tone: 'warn', text: '负责人 ID 必须是数字' });
       return;
     }
+    setTicketSubmitLoading(true);
     try {
       const result = await workspaceApi.submitTicket(authRequest, token, {
         conversationId: ticketDraft.conversationId,
@@ -78,19 +91,24 @@ export function useTicketWorkspace({
       setNotice({ tone: 'ok', text: `工单已提交：${result.data.status}` });
     } catch (error) {
       handleRequestError(error);
+    } finally {
+      setTicketSubmitLoading(false);
     }
   }
 
   async function loadSimilarTickets() {
-    if (!token || !askResult) {
+    if (!token || !askResult || similarTicketsLoading) {
       return;
     }
+    setSimilarTicketsLoading(true);
     try {
       const result = await workspaceApi.listSimilarTickets(authRequest, token, askResult.conversationId);
       setSimilarTickets(result.data);
       setNotice({ tone: 'ok', text: `找到 ${result.data.length} 条相似工单` });
     } catch (error) {
       handleRequestError(error);
+    } finally {
+      setSimilarTicketsLoading(false);
     }
   }
 
@@ -98,6 +116,9 @@ export function useTicketWorkspace({
     ticketDraft,
     submitResult,
     similarTickets,
+    ticketDraftLoading,
+    ticketSubmitLoading,
+    similarTicketsLoading,
     generateTicketDraft,
     submitTicket,
     loadSimilarTickets,

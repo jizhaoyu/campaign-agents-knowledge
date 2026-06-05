@@ -2,12 +2,16 @@ import { FormEvent } from 'react';
 import { AskResult, SimilarTicket, SubmitTicketResult, TicketDraft } from '../api';
 import { CardHeading } from '../components/CardHeading';
 import { ListEmpty } from '../components/ListEmpty';
+import { SkeletonBlock } from '../components/SkeletonBlock';
 
 export function TicketPanel({
   askResult,
   ticketDraft,
   submitResult,
   similarTickets,
+  ticketDraftLoading,
+  ticketSubmitLoading,
+  similarTicketsLoading,
   onGenerateDraft,
   onLoadSimilarTickets,
   onSubmitTicket,
@@ -17,6 +21,9 @@ export function TicketPanel({
   ticketDraft: TicketDraft | null;
   submitResult: SubmitTicketResult | null;
   similarTickets: SimilarTicket[];
+  ticketDraftLoading: boolean;
+  ticketSubmitLoading: boolean;
+  similarTicketsLoading: boolean;
   onGenerateDraft: () => void;
   onLoadSimilarTickets: () => void;
   onSubmitTicket: (event: FormEvent<HTMLFormElement>) => void;
@@ -27,14 +34,16 @@ export function TicketPanel({
       <article className="card">
         <CardHeading marker="04" title="工单草稿" />
         <div className="button-row">
-          <button type="button" onClick={onGenerateDraft} disabled={!askResult}>
-            生成草稿
+          <button type="button" onClick={onGenerateDraft} disabled={!askResult || ticketDraftLoading}>
+            {ticketDraftLoading ? '生成中...' : '生成草稿'}
           </button>
-          <button type="button" onClick={onLoadSimilarTickets} disabled={!askResult}>
-            相似工单
+          <button type="button" onClick={onLoadSimilarTickets} disabled={!askResult || similarTicketsLoading}>
+            {similarTicketsLoading ? '查询中...' : '相似工单'}
           </button>
         </div>
-        {ticketDraft ? (
+        {ticketDraftLoading && !ticketDraft ? (
+          <SkeletonBlock label="工单草稿骨架" lines={5} variant="panel" />
+        ) : ticketDraft ? (
           <form className="stacked-form" onSubmit={onSubmitTicket}>
             <label htmlFor="ticket-title">标题</label>
             <input id="ticket-title" name="title" defaultValue={ticketDraft.title} required />
@@ -48,8 +57,8 @@ export function TicketPanel({
             </select>
             <label htmlFor="assigneeId">负责人 ID</label>
             <input id="assigneeId" name="assigneeId" defaultValue={ticketDraft.suggestedAssigneeId || ''} />
-            <button type="submit" className="primary-action">
-              提交工单
+            <button type="submit" className="primary-action" disabled={ticketSubmitLoading}>
+              {ticketSubmitLoading ? '提交中...' : '提交工单'}
             </button>
           </form>
         ) : (
@@ -59,7 +68,8 @@ export function TicketPanel({
 
       <article className="card">
         <CardHeading marker="SIM" title="相似工单" />
-        <ListEmpty show={!similarTickets.length} text="暂无相似工单结果" />
+        {similarTicketsLoading && !similarTickets.length && <SkeletonBlock label="相似工单骨架" lines={4} variant="panel" />}
+        <ListEmpty show={!similarTickets.length && !similarTicketsLoading} text="暂无相似工单结果" />
         {similarTickets.map((ticket) => (
           <div className="list-item similar-ticket-item" key={ticket.ticketId}>
             <div>

@@ -21,6 +21,12 @@ async function mockWorkspaceBootstrap(page: Page) {
   const documents = new Map<number, { id: number; fileName: string; parseStatus: string; indexStatus: string; chunkCount: number; failureReason: string | null }>();
   let nextKnowledgeBaseId = 10;
   let nextDocumentId = 100;
+  let chatAskRequestCount = 0;
+  let ticketDraftRequestCount = 0;
+  let ticketSubmitRequestCount = 0;
+  let releaseChatAskResponse: (() => void) | null = null;
+  let releaseTicketDraftResponse: (() => void) | null = null;
+  let releaseTicketSubmitResponse: (() => void) | null = null;
 
   await page.route('**/api/v1/auth/login', async (route) => {
     await route.fulfill({
@@ -152,6 +158,12 @@ async function mockWorkspaceBootstrap(page: Page) {
   });
 
   await page.route('**/api/v1/chat/ask', async (route) => {
+    chatAskRequestCount += 1;
+    if (chatAskRequestCount === 1) {
+      await new Promise<void>((resolve) => {
+        releaseChatAskResponse = resolve;
+      });
+    }
     await route.fulfill({
       contentType: 'application/json',
       body: JSON.stringify(
@@ -174,6 +186,12 @@ async function mockWorkspaceBootstrap(page: Page) {
   });
 
   await page.route('**/api/v1/tickets/draft', async (route) => {
+    ticketDraftRequestCount += 1;
+    if (ticketDraftRequestCount === 1) {
+      await new Promise<void>((resolve) => {
+        releaseTicketDraftResponse = resolve;
+      });
+    }
     await route.fulfill({
       contentType: 'application/json',
       body: JSON.stringify(
@@ -193,6 +211,12 @@ async function mockWorkspaceBootstrap(page: Page) {
       await route.fallback();
       return;
     }
+    ticketSubmitRequestCount += 1;
+    if (ticketSubmitRequestCount === 1) {
+      await new Promise<void>((resolve) => {
+        releaseTicketSubmitResponse = resolve;
+      });
+    }
     await route.fulfill({
       contentType: 'application/json',
       body: JSON.stringify(
@@ -205,10 +229,17 @@ async function mockWorkspaceBootstrap(page: Page) {
       )
     });
   });
+
+  return {
+    releaseChatAskResponse: () => releaseChatAskResponse?.(),
+    releaseTicketDraftResponse: () => releaseTicketDraftResponse?.(),
+    releaseTicketSubmitResponse: () => releaseTicketSubmitResponse?.(),
+    counts: () => ({ chatAskRequestCount, ticketDraftRequestCount, ticketSubmitRequestCount })
+  };
 }
 
 test('runs the core knowledge-to-ticket workflow', async ({ page }) => {
-  await mockWorkspaceBootstrap(page);
+  const workspace = await mockWorkspaceBootstrap(page);
   await page.goto('/');
 
   await expect(page.getByRole('heading', { name: '企业知识库到工单闭环的 AI 工作台' })).toBeVisible();
@@ -248,14 +279,30 @@ test('runs the core knowledge-to-ticket workflow', async ({ page }) => {
   await page.getByRole('link', { name: '问答' }).click();
   await page.getByLabel('问题').fill('VPN 无法连接应该怎么处理？');
   await page.getByRole('button', { name: '提问' }).click();
+  await expect(page.getByLabel('回答生成骨架')).toBeVisible();
+  await expect(page.getByRole('button', { name: '生成中...' })).toBeDisabled();
+  await page.getByRole('button', { name: '生成中...' }).click({ force: true });
+  expect(workspace.counts().chatAskRequestCount).toBe(1);
+  workspace.releaseChatAskResponse();
+  await expect(page.getByLabel('回答生成骨架')).toHaveCount(0);
   await expect(page.getByText(/已生成回答/)).toBeVisible();
   await expect(page.locator('#问答').getByText('vpn-guide.md')).toBeVisible();
   await expect(page.getByRole('heading', { name: '最近问答' })).toBeVisible();
 
   await page.getByRole('link', { name: '工单' }).click();
   await page.getByRole('button', { name: '生成草稿' }).click();
+  await expect(page.getByLabel('工单草稿骨架')).toBeVisible();
+  await expect(page.getByRole('button', { name: '生成中...' })).toBeDisabled();
+  await page.getByRole('button', { name: '生成中...' }).click({ force: true });
+  expect(workspace.counts().ticketDraftRequestCount).toBe(1);
+  workspace.releaseTicketDraftResponse();
+  await expect(page.getByLabel('工单草稿骨架')).toHaveCount(0);
   await expect(page.getByText('工单草稿已生成')).toBeVisible();
   await page.getByRole('button', { name: '提交工单' }).click();
+  await expect(page.getByRole('button', { name: '提交中...' })).toBeDisabled();
+  await page.getByRole('button', { name: '提交中...' }).click({ force: true });
+  expect(workspace.counts().ticketSubmitRequestCount).toBe(1);
+  workspace.releaseTicketSubmitResponse();
   await expect(page.getByText(/工单已提交/)).toBeVisible();
   await expect(page.getByText('Ticket #501')).toBeVisible();
 });

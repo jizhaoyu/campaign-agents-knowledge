@@ -2,6 +2,8 @@ import { expect, test } from '@playwright/test';
 
 test('shows matched keyword explanations for similar tickets', async ({ page }) => {
   const requestedPaths: string[] = [];
+  let similarTicketRequestCount = 0;
+  let releaseSimilarTicketsResponse: (() => void) | null = null;
 
   await page.route('**/api/v1/auth/login', async (route) => {
     requestedPaths.push(new URL(route.request().url()).pathname);
@@ -77,6 +79,12 @@ test('shows matched keyword explanations for similar tickets', async ({ page }) 
   await page.route('**/api/v1/tickets/similar**', async (route) => {
     const url = new URL(route.request().url());
     requestedPaths.push(`${url.pathname}?conversationId=${url.searchParams.get('conversationId')}`);
+    similarTicketRequestCount += 1;
+    if (similarTicketRequestCount === 1) {
+      await new Promise<void>((resolve) => {
+        releaseSimilarTicketsResponse = resolve;
+      });
+    }
     await route.fulfill({
       contentType: 'application/json',
       body: JSON.stringify({
@@ -107,6 +115,12 @@ test('shows matched keyword explanations for similar tickets', async ({ page }) 
   await page.getByRole('link', { name: '工单' }).click();
   await page.getByRole('button', { name: '相似工单' }).click();
 
+  await expect(page.getByLabel('相似工单骨架')).toBeVisible();
+  await expect(page.getByRole('button', { name: '查询中...' })).toBeDisabled();
+  await page.getByRole('button', { name: '查询中...' }).click({ force: true });
+  expect(similarTicketRequestCount).toBe(1);
+  releaseSimilarTicketsResponse?.();
+  await expect(page.getByLabel('相似工单骨架')).toHaveCount(0);
   await expect(page.getByText('VPN 历史故障')).toBeVisible();
   await expect(page.getByText('命中关键词：vpn、客户端；来源：标题、描述')).toBeVisible();
   await expect(page.getByLabel('工单 #42 命中关键词').getByText('vpn')).toBeVisible();
