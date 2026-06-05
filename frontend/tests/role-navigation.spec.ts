@@ -83,10 +83,18 @@ test('hides admin-only workspace surfaces for a regular user', async ({ page }) 
   await expect(navigation.getByText('用户')).toHaveCount(0);
   await expect(navigation.getByText('会话')).toHaveCount(0);
   await expect(navigation.getByText('审计')).toHaveCount(0);
+  await expect(page).toHaveURL(/\/dashboard$/);
+  await page.getByRole('link', { name: '问答' }).click();
+  await expect(page).toHaveURL(/\/chat$/);
+  await expect(page.getByRole('heading', { name: '最近问答' })).toBeVisible();
+  await page.reload();
+  await expect(page).toHaveURL(/\/chat$/);
+  await expect(page.getByRole('heading', { name: '最近问答' })).toBeVisible();
+  await page.goto('/users');
+  await expect(page).toHaveURL(/\/dashboard$/);
   await expect(page.getByRole('button', { name: '创建知识库' })).toHaveCount(0);
   await expect(page.getByRole('heading', { name: '文档上传' })).toHaveCount(0);
   await expect(page.getByRole('heading', { name: '文档管理' })).toHaveCount(0);
-  await expect(page.getByText('当前角色可选择已有知识库进行问答和工单协同')).toBeVisible();
 
   expect(requestedPaths).toContain('/api/v1/auth/login');
   expect(requestedPaths).toContain('/api/v1/knowledge-bases');

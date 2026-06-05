@@ -18,11 +18,24 @@ import org.springframework.web.filter.OncePerRequestFilter;
 public class TokenAuthenticationFilter extends OncePerRequestFilter {
 
     private static final List<String> PUBLIC_PATHS = List.of(
+            "/",
+            "/dashboard",
+            "/knowledge",
+            "/chat",
+            "/tickets",
+            "/approvals",
+            "/ai-config",
+            "/users",
+            "/sessions",
+            "/audits",
+            "/index.html",
+            "/favicon.svg",
             "/api/v1/auth/login",
             "/api/v1/auth/refresh",
             "/actuator/health",
             "/error"
     );
+    private static final List<String> PUBLIC_PATH_PREFIXES = List.of("/assets/");
 
     private final SimpleTokenStore tokenStore;
     private final RolePermissionMapper rolePermissionMapper;
@@ -36,7 +49,8 @@ public class TokenAuthenticationFilter extends OncePerRequestFilter {
     protected boolean shouldNotFilter(HttpServletRequest request) {
         String requestUri = request.getRequestURI();
         return "OPTIONS".equalsIgnoreCase(request.getMethod())
-                || PUBLIC_PATHS.stream().anyMatch(requestUri::startsWith);
+                || PUBLIC_PATHS.contains(requestUri)
+                || PUBLIC_PATH_PREFIXES.stream().anyMatch(requestUri::startsWith);
     }
 
     @Override

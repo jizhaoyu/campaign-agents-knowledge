@@ -93,6 +93,9 @@ test('uses paged admin management requests for audits users and token sessions',
     const url = new URL(route.request().url());
     auditRequests.push(url.search);
     const pageNumber = Number(url.searchParams.get('page') || '0');
+    const traceId = url.searchParams.get('traceId');
+    const eventType = url.searchParams.get('eventType');
+    const filtered = traceId === 'trace-audit-0' && eventType === 'USER_UNLOCKED';
     await route.fulfill({
       contentType: 'application/json',
       body: JSON.stringify({
@@ -102,21 +105,21 @@ test('uses paged admin management requests for audits users and token sessions',
         data: {
           items: [
             {
-              id: pageNumber === 0 ? 11 : 10,
+              id: filtered ? 12 : pageNumber === 0 ? 11 : 10,
               actorId: 1,
-              eventType: pageNumber === 0 ? 'USER_UNLOCKED' : 'TOKEN_SESSION_REVOKED',
+              eventType: filtered || pageNumber === 0 ? 'USER_UNLOCKED' : 'TOKEN_SESSION_REVOKED',
               targetType: 'USER',
               targetId: 1,
-              traceId: `trace-audit-${pageNumber}`,
-              payloadJson: '{}'
+              traceId: filtered ? 'trace-audit-0' : `trace-audit-${pageNumber}`,
+              payloadJson: filtered ? '{"reason":"manual-check"}' : '{}'
             }
           ],
           page: pageNumber,
           size: 8,
-          totalItems: 9,
-          totalPages: 2,
+          totalItems: filtered ? 1 : 9,
+          totalPages: filtered ? 1 : 2,
           hasPrevious: pageNumber > 0,
-          hasNext: pageNumber === 0
+          hasNext: !filtered && pageNumber === 0
         }
       })
     });
@@ -200,22 +203,35 @@ test('uses paged admin management requests for audits users and token sessions',
   await page.goto('/');
   await page.getByRole('button', { name: '进入工作台' }).click();
 
+  await page.getByRole('link', { name: '用户' }).click();
   await page.getByRole('button', { name: '刷新用户' }).click();
   await expect(page.getByText('系统管理员 / admin')).toBeVisible();
   await page.getByLabel('用户分页').getByRole('button', { name: '下一页' }).click();
   await expect(page.getByText('支持工程师 / support')).toBeVisible();
 
+  await page.getByRole('link', { name: '会话' }).click();
   await page.getByRole('button', { name: '刷新会话' }).click();
   await expect(page.getByText('#21 / admin / REFRESHABLE')).toBeVisible();
   await page.getByLabel('会话分页').getByRole('button', { name: '下一页' }).click();
   await expect(page.getByText('#20 / support / REFRESHABLE')).toBeVisible();
 
-  await page.getByRole('button', { name: '刷新审计' }).click();
+  await page.getByRole('link', { name: '审计' }).click();
+  await page.getByRole('button', { name: '查询审计' }).click();
   await expect(page.getByText('USER_UNLOCKED')).toBeVisible();
   await page.getByLabel('审计分页').getByRole('button', { name: '下一页' }).click();
   await expect(page.getByText('TOKEN_SESSION_REVOKED')).toBeVisible();
+  await page.getByLabel('traceId').fill('trace-audit-0');
+  await page.getByLabel('事件').fill('USER_UNLOCKED');
+  await page.getByRole('button', { name: '查询审计' }).click();
+  await expect(page.getByLabel('审计时间线').getByText('#12 / actor #1 / USER #1')).toBeVisible();
+  await expect(page.getByText('{"reason":"manual-check"}')).toBeVisible();
+  await expect(page.getByRole('button', { name: '复制 traceId' })).toBeVisible();
 
   expect(userRequests).toEqual(['?page=0&size=8', '?page=1&size=8']);
   expect(sessionRequests).toEqual(['?page=0&size=8', '?page=1&size=8']);
-  expect(auditRequests).toEqual(['?page=0&size=8', '?page=1&size=8']);
+  expect(auditRequests).toEqual([
+    '?page=0&size=8',
+    '?page=1&size=8',
+    '?page=0&size=8&traceId=trace-audit-0&eventType=USER_UNLOCKED'
+  ]);
 });

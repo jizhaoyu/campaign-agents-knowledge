@@ -428,6 +428,29 @@ Query：
 
 - `conversationId`
 
+响应：
+
+```json
+{
+  "code": "OK",
+  "message": "success",
+  "data": [
+    {
+      "ticketId": 42,
+      "title": "VPN 历史故障",
+      "priority": "HIGH",
+      "status": "OPEN",
+      "score": 2,
+      "matchedKeywords": ["vpn", "客户端"],
+      "matchSummary": "命中关键词：vpn、客户端；来源：标题、描述"
+    }
+  ],
+  "traceId": "abc123"
+}
+```
+
+`score` 为命中关键词数量，`matchedKeywords` 保留问题关键词在历史工单标题/描述中的命中项，`matchSummary` 可直接用于前端解释推荐原因。
+
 ## 审批接口
 
 ### GET /api/v1/approvals/comment-templates
@@ -501,6 +524,8 @@ Query：
 
 不带分页参数时响应保持旧数组结构并返回最近 200 条内的过滤结果；带 `page` 或 `size` 时使用数据库过滤并返回分页结构，字段同文档分页响应的 `items/page/size/totalItems/totalPages/hasPrevious/hasNext`。
 
+前端审计回看页使用分页模式，并会把 `traceId/eventType/targetType/targetId` 作为时间线过滤条件透传给该接口。
+
 ## 运营看板接口
 
 ### GET /api/v1/dashboard/operations
@@ -538,6 +563,50 @@ Query：
 ```
 
 `healthLevel` 可取 `HEALTHY` / `ATTENTION` / `CRITICAL`。`recommendedActions` 由后端根据失败索引、待审批、高风险工单和队列堆积情况生成，用于前端直接展示运营待办。
+
+## AI 运行配置接口
+
+### GET /api/v1/ai/runtime
+
+说明：查询只读 AI 运行配置状态。仅具备 `dashboard:read` 权限的管理员可访问，用于前端 AI 配置页检查 chat/embedding 是否启用、模型 Bean 是否可用、凭证是否已配置以及 OpenAI-compatible baseUrl/path/model。接口不返回 API key 明文。
+
+响应：
+
+```json
+{
+  "code": "OK",
+  "message": "success",
+  "data": {
+    "activeProfiles": ["mysql", "ai-openai"],
+    "chat": {
+      "enabled": true,
+      "modelAvailable": true,
+      "credentialConfigured": true,
+      "provider": "openai",
+      "baseUrl": "https://relay.example.com/v1",
+      "path": "/chat/completions",
+      "model": "gpt-5.4"
+    },
+    "embedding": {
+      "enabled": false,
+      "modelAvailable": false,
+      "credentialConfigured": true,
+      "provider": "none",
+      "baseUrl": "https://relay.example.com/v1",
+      "path": "/embeddings",
+      "model": "text-embedding-3-small"
+    },
+    "readinessLevel": "READY",
+    "warnings": [
+      "AI runtime configuration is ready for enabled components."
+    ],
+    "generatedAt": "2026-06-06T02:10:00"
+  },
+  "traceId": "abc123"
+}
+```
+
+`readinessLevel` 可取 `READY` / `PARTIAL` / `DISABLED`。`credentialConfigured` 只表示 Spring 环境中存在非空凭证配置，不暴露凭证内容。
 
 ## 错误码初稿
 

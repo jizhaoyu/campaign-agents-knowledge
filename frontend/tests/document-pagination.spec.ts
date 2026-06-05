@@ -1,7 +1,12 @@
 import { expect, test } from '@playwright/test';
 
 test('uses server-side pagination and filters for document management', async ({ page }) => {
-  const documentRequests: Array<{ page: string | null; keyword: string | null; indexStatus: string | null }> = [];
+  const documentRequests: Array<{
+    page: string | null;
+    size: string | null;
+    keyword: string | null;
+    indexStatus: string | null;
+  }> = [];
 
   await page.route('**/api/v1/auth/login', async (route) => {
     await route.fulfill({
@@ -98,14 +103,18 @@ test('uses server-side pagination and filters for document management', async ({
     const url = new URL(route.request().url());
     documentRequests.push({
       page: url.searchParams.get('page'),
+      size: url.searchParams.get('size'),
       keyword: url.searchParams.get('keyword'),
       indexStatus: url.searchParams.get('indexStatus')
     });
     const pageNumber = Number(url.searchParams.get('page') || '0');
     const keyword = url.searchParams.get('keyword');
     const status = url.searchParams.get('indexStatus');
+    const isNoMatch = keyword === 'missing';
     const items =
-      keyword === 'failed' && status === 'FAILED'
+      isNoMatch
+        ? []
+        : keyword === 'failed' && status === 'FAILED'
         ? [
             {
               id: 32,
@@ -147,9 +156,9 @@ test('uses server-side pagination and filters for document management', async ({
         data: {
           items,
           page: pageNumber,
-          size: 10,
-          totalItems: keyword === 'failed' ? 1 : 11,
-          totalPages: keyword === 'failed' ? 1 : 2,
+          size: Number(url.searchParams.get('size') || '10'),
+          totalItems: isNoMatch ? 1 : keyword === 'failed' ? 1 : 11,
+          totalPages: isNoMatch || keyword === 'failed' ? 1 : 2,
           hasPrevious: pageNumber > 0,
           hasNext: !keyword && pageNumber === 0
         }
@@ -159,6 +168,7 @@ test('uses server-side pagination and filters for document management', async ({
 
   await page.goto('/');
   await page.getByRole('button', { name: '进入工作台' }).click();
+  await page.getByRole('link', { name: '知识库' }).click();
 
   await expect(page.getByText('vpn-page-1.md')).toBeVisible();
   await expect(page.getByText('第 1 / 2 页，共 11 个')).toBeVisible();
@@ -171,7 +181,16 @@ test('uses server-side pagination and filters for document management', async ({
   await expect(page.getByText('failed-vpn.md')).toBeVisible();
   await expect(page.getByText('第 1 / 1 页，共 1 个')).toBeVisible();
 
-  expect(documentRequests).toContainEqual({ page: '0', keyword: null, indexStatus: null });
-  expect(documentRequests).toContainEqual({ page: '1', keyword: null, indexStatus: null });
-  expect(documentRequests).toContainEqual({ page: '0', keyword: 'failed', indexStatus: 'FAILED' });
+  await page.getByLabel('每页数量').selectOption('20');
+  await expect(page.getByText('failed-vpn.md')).toBeVisible();
+
+  await page.getByLabel('搜索文档').fill('missing');
+  await expect(page.getByText('没有匹配文档')).toBeVisible();
+  await expect(page.getByText('换个关键词或状态筛选试试。')).toBeVisible();
+
+  expect(documentRequests).toContainEqual({ page: '0', size: '10', keyword: null, indexStatus: null });
+  expect(documentRequests).toContainEqual({ page: '1', size: '10', keyword: null, indexStatus: null });
+  expect(documentRequests).toContainEqual({ page: '0', size: '10', keyword: 'failed', indexStatus: 'FAILED' });
+  expect(documentRequests).toContainEqual({ page: '0', size: '20', keyword: 'failed', indexStatus: 'FAILED' });
+  expect(documentRequests).toContainEqual({ page: '0', size: '20', keyword: 'missing', indexStatus: 'FAILED' });
 });

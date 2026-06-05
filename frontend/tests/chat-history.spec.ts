@@ -67,6 +67,7 @@ test('loads and restores recent chat history', async ({ page }) => {
 
   await page.goto('/');
   await page.getByRole('button', { name: '进入工作台' }).click();
+  await page.getByRole('link', { name: '问答' }).click();
 
   await expect(page.getByRole('heading', { name: '最近问答' })).toBeVisible();
   await expect(page.getByRole('button', { name: /历史 VPN 问题/ })).toBeVisible();
@@ -76,5 +77,6 @@ test('loads and restores recent chat history', async ({ page }) => {
   await expect(page.getByText('历史回答：先确认账号状态，再检查客户端版本。')).toBeVisible();
   await expect(page.locator('#问答 .answer-card').getByText('Conversation #88')).toBeVisible();
   await expect(page.getByText('已恢复会话 #88')).toBeVisible();
+  await page.getByRole('link', { name: '知识库' }).click();
   await expect(page.getByLabel('选择知识库')).toHaveValue('7');
 });

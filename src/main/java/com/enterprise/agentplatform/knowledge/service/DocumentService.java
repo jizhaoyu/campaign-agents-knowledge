@@ -95,25 +95,7 @@ public class DocumentService {
         knowledgeBaseService.requireExisting(knowledgeBaseId);
         ProcessingStatus statusFilter = parseStatus(indexStatus);
         String keywordFilter = normalizeKeyword(keyword);
-        List<DocumentRecord> records = documentRecordRepository.findByKnowledgeBaseIdOrderByIdDesc(knowledgeBaseId)
-                .stream()
-                .filter(record -> statusFilter == null || record.getIndexStatus() == statusFilter)
-                .filter(record -> keywordFilter == null || record.getFileName().toLowerCase(Locale.ROOT).contains(keywordFilter))
-                .toList();
-        if (records.isEmpty()) {
-            return List.of();
-        }
-        Map<Long, Long> chunkCountByDocumentId = documentChunkRepository.countChunksByDocumentIds(
-                        records.stream().map(DocumentRecord::getId).toList()
-                )
-                .stream()
-                .collect(Collectors.toMap(
-                        DocumentChunkRepository.DocumentChunkCount::getDocumentId,
-                        DocumentChunkRepository.DocumentChunkCount::getChunkCount
-                ));
-        return records.stream()
-                .map(record -> toResponse(record, chunkCountByDocumentId.getOrDefault(record.getId(), 0L)))
-                .toList();
+        return toResponses(findDocumentRecords(knowledgeBaseId, keywordFilter, statusFilter));
     }
 
     public PageResponse<DocumentUploadResponse> listByKnowledgeBase(
@@ -131,14 +113,7 @@ public class DocumentService {
         if (records.isEmpty()) {
             return PageResponse.from(records.map(record -> toResponse(record, 0L)));
         }
-        Map<Long, Long> chunkCountByDocumentId = documentChunkRepository.countChunksByDocumentIds(
-                        records.stream().map(DocumentRecord::getId).toList()
-                )
-                .stream()
-                .collect(Collectors.toMap(
-                        DocumentChunkRepository.DocumentChunkCount::getDocumentId,
-                        DocumentChunkRepository.DocumentChunkCount::getChunkCount
-                ));
+        Map<Long, Long> chunkCountByDocumentId = chunkCountByDocumentId(records.stream().map(DocumentRecord::getId).toList());
         return PageResponse.from(records.map(record -> toResponse(record, chunkCountByDocumentId.getOrDefault(record.getId(), 0L))));
     }
 
@@ -225,6 +200,25 @@ public class DocumentService {
         );
     }
 
+    private List<DocumentUploadResponse> toResponses(List<DocumentRecord> records) {
+        if (records.isEmpty()) {
+            return List.of();
+        }
+        Map<Long, Long> chunkCountByDocumentId = chunkCountByDocumentId(records.stream().map(DocumentRecord::getId).toList());
+        return records.stream()
+                .map(record -> toResponse(record, chunkCountByDocumentId.getOrDefault(record.getId(), 0L)))
+                .toList();
+    }
+
+    private Map<Long, Long> chunkCountByDocumentId(List<Long> documentIds) {
+        return documentChunkRepository.countChunksByDocumentIds(documentIds)
+                .stream()
+                .collect(Collectors.toMap(
+                        DocumentChunkRepository.DocumentChunkCount::getDocumentId,
+                        DocumentChunkRepository.DocumentChunkCount::getChunkCount
+                ));
+    }
+
     private ProcessingStatus parseStatus(String value) {
         if (value == null || value.isBlank()) {
             return null;
@@ -272,6 +266,33 @@ public class DocumentService {
             );
         }
         return documentRecordRepository.findByKnowledgeBaseId(knowledgeBaseId, pageRequest);
+    }
+
+    private List<DocumentRecord> findDocumentRecords(
+            Long knowledgeBaseId,
+            String keywordFilter,
+            ProcessingStatus statusFilter
+    ) {
+        if (keywordFilter != null && statusFilter != null) {
+            return documentRecordRepository.findByKnowledgeBaseIdAndIndexStatusAndFileNameContainingIgnoreCaseOrderByIdDesc(
+                    knowledgeBaseId,
+                    statusFilter,
+                    keywordFilter
+            );
+        }
+        if (keywordFilter != null) {
+            return documentRecordRepository.findByKnowledgeBaseIdAndFileNameContainingIgnoreCaseOrderByIdDesc(
+                    knowledgeBaseId,
+                    keywordFilter
+            );
+        }
+        if (statusFilter != null) {
+            return documentRecordRepository.findByKnowledgeBaseIdAndIndexStatusOrderByIdDesc(
+                    knowledgeBaseId,
+                    statusFilter
+            );
+        }
+        return documentRecordRepository.findByKnowledgeBaseIdOrderByIdDesc(knowledgeBaseId);
     }
 
     private String resolveFileType(String fileName) {

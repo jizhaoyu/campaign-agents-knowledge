@@ -207,10 +207,16 @@ nav {
 }
 
 .nav-link:hover,
-.nav-link:focus-visible {
+.nav-link:focus-visible,
+.nav-link.active {
   background: #eaf1ff;
   color: var(--blue-dark);
   outline: none;
+}
+
+.nav-link.active {
+  box-shadow: inset 3px 0 0 var(--blue);
+  font-weight: 800;
 }
 
 .workspace {
@@ -533,6 +539,25 @@ nav {
   gap: 0.65rem;
 }
 
+.citation-card {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.citation-card > div,
+.result-heading {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.citation-card button,
+.result-heading button {
+  padding: 0.45rem 0.7rem;
+}
+
 .history-list {
   display: grid;
   gap: 0.65rem;
@@ -627,9 +652,21 @@ blockquote p {
 }
 
 .document-toolbar input,
-.document-toolbar select {
+.document-toolbar select,
+.audit-filter-panel input {
   border-radius: 14px;
   padding: 0.65rem 0.8rem;
+}
+
+.audit-filter-panel {
+  display: grid;
+  grid-template-columns: 80px minmax(150px, 1fr) 64px minmax(170px, 1fr);
+  gap: 0.6rem;
+  align-items: center;
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  border-radius: 22px;
+  background: rgba(248, 250, 252, 0.72);
+  padding: 0.75rem;
 }
 
 .pagination-bar {
@@ -692,6 +729,162 @@ blockquote p {
   text-overflow: ellipsis;
 }
 
+.audit-timeline {
+  display: grid;
+  gap: 0.7rem;
+}
+
+.audit-row {
+  position: relative;
+  border-left: 4px solid rgba(37, 99, 235, 0.38);
+}
+
+.audit-trace-line {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  align-items: center;
+}
+
+.audit-trace-line button {
+  padding: 0.45rem 0.7rem;
+}
+
+.similar-ticket-item {
+  border-left: 4px solid rgba(37, 99, 235, 0.35);
+}
+
+.similar-ticket-item > div:first-child {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem 0.75rem;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.similar-ticket-item p {
+  margin: 0;
+  color: var(--slate);
+  line-height: 1.65;
+}
+
+.ai-runtime-section {
+  grid-template-columns: minmax(0, 0.95fr) minmax(320px, 0.75fr);
+}
+
+.ai-runtime-details {
+  grid-column: 1 / -1;
+}
+
+.ai-readiness {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  align-items: center;
+  justify-content: space-between;
+  border: 1px solid rgba(148, 163, 184, 0.28);
+  border-radius: 22px;
+  background: rgba(248, 250, 252, 0.82);
+  padding: 0.9rem;
+}
+
+.ai-readiness strong {
+  color: #0f172a;
+  font-family: 'Fira Code', monospace;
+  font-size: 1.5rem;
+  letter-spacing: -0.05em;
+}
+
+.ai-readiness span,
+.ai-runtime-guidance li,
+.ai-runtime-card dt {
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.ai-readiness.ready {
+  border-color: rgba(15, 118, 110, 0.28);
+  background: rgba(240, 253, 250, 0.84);
+}
+
+.ai-readiness.partial {
+  border-color: rgba(180, 83, 9, 0.32);
+  background: rgba(255, 251, 235, 0.86);
+}
+
+.ai-readiness.disabled {
+  border-color: rgba(148, 163, 184, 0.34);
+}
+
+.ai-runtime-guidance ul {
+  display: grid;
+  gap: 0.45rem;
+  margin: 0;
+  padding-left: 1.2rem;
+}
+
+.ai-runtime-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.85rem;
+}
+
+.ai-runtime-card {
+  display: grid;
+  gap: 0.85rem;
+  border: 1px solid rgba(148, 163, 184, 0.28);
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.76);
+  padding: 1rem;
+}
+
+.ai-runtime-card.enabled {
+  border-left: 4px solid rgba(15, 118, 110, 0.42);
+}
+
+.ai-runtime-card.disabled {
+  border-left: 4px solid rgba(100, 116, 139, 0.32);
+}
+
+.ai-runtime-card > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.ai-runtime-card > div span {
+  border-radius: 999px;
+  background: #eff6ff;
+  color: var(--blue-dark);
+  font-weight: 800;
+  padding: 0.35rem 0.65rem;
+}
+
+.ai-runtime-card dl {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.65rem;
+  margin: 0;
+}
+
+.ai-runtime-card dl div {
+  min-width: 0;
+}
+
+.ai-runtime-card dt {
+  font-size: 0.78rem;
+}
+
+.ai-runtime-card dd {
+  overflow-wrap: anywhere;
+  margin: 0.2rem 0 0;
+  color: var(--ink);
+  font-family: 'Fira Code', monospace;
+  font-size: 0.9rem;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -729,6 +922,16 @@ blockquote p {
   }
 
   .document-toolbar {
+    grid-template-columns: 1fr;
+  }
+
+  .audit-filter-panel {
+    grid-template-columns: 1fr;
+  }
+
+  .ai-runtime-section,
+  .ai-runtime-grid,
+  .ai-runtime-card dl {
     grid-template-columns: 1fr;
   }
 

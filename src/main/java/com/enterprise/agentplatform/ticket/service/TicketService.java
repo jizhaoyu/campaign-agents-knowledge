@@ -28,12 +28,10 @@ import com.enterprise.agentplatform.ticket.dto.SubmitTicketRequest;
 import com.enterprise.agentplatform.ticket.dto.SubmitTicketResponse;
 import com.enterprise.agentplatform.ticket.dto.TicketDraftResponse;
 import java.time.LocalDateTime;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.stream.Collectors;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
@@ -42,9 +40,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class TicketService {
 
-    private static final int SIMILAR_TICKET_LIMIT = 5;
     private static final int SIMILAR_CANDIDATE_LIMIT = 50;
-    private static final int SIMILAR_KEYWORD_LIMIT = 8;
 
     private final ConversationRepository conversationRepository;
     private final MessageRecordRepository messageRecordRepository;
@@ -54,6 +50,7 @@ public class TicketService {
     private final UserRoleRepository userRoleRepository;
     private final CurrentUserService currentUserService;
     private final AuditService auditService;
+    private final SimilarTicketMatcher similarTicketMatcher;
 
     public TicketService(
             ConversationRepository conversationRepository,
@@ -63,7 +60,8 @@ public class TicketService {
             RoleRepository roleRepository,
             UserRoleRepository userRoleRepository,
             CurrentUserService currentUserService,
-            AuditService auditService
+            AuditService auditService,
+            SimilarTicketMatcher similarTicketMatcher
     ) {
         this.conversationRepository = conversationRepository;
         this.messageRecordRepository = messageRecordRepository;
@@ -73,6 +71,7 @@ public class TicketService {
         this.userRoleRepository = userRoleRepository;
         this.currentUserService = currentUserService;
         this.auditService = auditService;
+        this.similarTicketMatcher = similarTicketMatcher;
     }
 
     public TicketDraftResponse generateDraft(Long conversationId) {
@@ -99,29 +98,18 @@ public class TicketService {
         String question = latestMessage(conversation.getId(), MessageRole.USER)
                 .map(MessageRecord::getContent)
                 .orElse("");
-        Set<String> keywords = tokenize(question);
+        List<String> keywords = similarTicketMatcher.tokenize(question);
         if (keywords.isEmpty()) {
             return List.of();
         }
         Map<Long, Ticket> candidateById = keywords.stream()
-                .limit(SIMILAR_KEYWORD_LIMIT)
+                .limit(SimilarTicketMatcher.SIMILAR_KEYWORD_LIMIT)
                 .flatMap(keyword -> ticketRepository.findByTitleContainingIgnoreCaseOrderByIdDesc(
                         keyword,
                         PageRequest.of(0, SIMILAR_CANDIDATE_LIMIT)
                 ).stream())
                 .collect(Collectors.toMap(Ticket::getId, ticket -> ticket, (existing, ignored) -> existing));
-        return candidateById.values().stream()
-                .map(ticket -> new SimilarTicketResponse(
-                        ticket.getId(),
-                        ticket.getTitle(),
-                        ticket.getPriority().name(),
-                        ticket.getStatus().name(),
-                        score(ticket.getTitle() + " " + ticket.getDescription(), keywords)
-                ))
-                .filter(response -> response.score() > 0)
-                .sorted(Comparator.comparingInt(SimilarTicketResponse::score).reversed())
-                .limit(SIMILAR_TICKET_LIMIT)
-                .toList();
+        return similarTicketMatcher.rank(List.copyOf(candidateById.values()), keywords);
     }
 
     @Transactional
@@ -210,24 +198,6 @@ public class TicketService {
 
     private String buildDescription(String question, String answer) {
         return "问题描述:\n" + question + "\n\n知识库建议:\n" + answer;
-    }
-
-    private Set<String> tokenize(String input) {
-        String normalized = input.toLowerCase(Locale.ROOT).replaceAll("[^\\p{IsAlphabetic}\\p{IsIdeographic}\\p{IsDigit}]+", " ");
-        return java.util.Arrays.stream(normalized.split("\\s+"))
-                .filter(token -> !token.isBlank())
-                .collect(Collectors.toSet());
-    }
-
-    private int score(String candidate, Set<String> keywords) {
-        String lower = candidate.toLowerCase(Locale.ROOT);
-        int score = 0;
-        for (String keyword : keywords) {
-            if (lower.contains(keyword)) {
-                score++;
-            }
-        }
-        return score;
     }
 
     private TicketPriority parsePriority(String value) {

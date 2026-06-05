@@ -1,5 +1,6 @@
 import { FormEvent } from 'react';
-import { AskResult, ChatHistoryItem } from '../api';
+import { AskResult, ChatHistoryItem, Citation } from '../api';
+import { CardHeading } from '../components/CardHeading';
 
 const demoQuestions = [
   'VPN 无法连接应该怎么处理？',
@@ -12,21 +13,20 @@ export function ChatPanel({
   chatHistory,
   onAsk,
   onRefreshHistory,
-  onRestoreHistoryItem
+  onRestoreHistoryItem,
+  onCopyCitation
 }: {
   askResult: AskResult | null;
   chatHistory: ChatHistoryItem[];
   onAsk: (event: FormEvent<HTMLFormElement>) => void;
   onRefreshHistory: () => void;
   onRestoreHistoryItem: (item: ChatHistoryItem) => void;
+  onCopyCitation: (citation: Citation) => void;
 }) {
   return (
     <section id="问答" className="section-grid wide-left">
       <article className="card">
-        <div className="card-heading">
-          <span>03</span>
-          <h2>知识问答</h2>
-        </div>
+        <CardHeading marker="03" title="知识问答" />
         <form className="stacked-form" onSubmit={onAsk}>
           <label htmlFor="question">问题</label>
           <textarea id="question" name="question" defaultValue={demoQuestions[0]} rows={4} required />
@@ -52,10 +52,7 @@ export function ChatPanel({
       </article>
 
       <article className="card answer-card">
-        <div className="card-heading">
-          <span>AI</span>
-          <h2>回答与引用</h2>
-        </div>
+        <CardHeading marker="AI" title="回答与引用" />
         {askResult ? (
           <>
             <p className="answer-text">{askResult.answer}</p>
@@ -66,8 +63,13 @@ export function ChatPanel({
             </div>
             <div className="citation-list">
               {askResult.citations.map((citation) => (
-                <blockquote key={citation.chunkId}>
-                  <strong>{citation.documentName}</strong>
+                <blockquote className="citation-card" key={citation.chunkId}>
+                  <div>
+                    <strong>{citation.documentName}</strong>
+                    <button type="button" onClick={() => onCopyCitation(citation)}>
+                      复制引用
+                    </button>
+                  </div>
                   <p>{citation.snippet}</p>
                 </blockquote>
               ))}
@@ -79,15 +81,15 @@ export function ChatPanel({
       </article>
 
       <article className="card">
-        <div className="card-heading split-heading">
-          <div>
-            <span>HIS</span>
-            <h2>最近问答</h2>
-          </div>
-          <button type="button" onClick={onRefreshHistory}>
-            刷新历史
-          </button>
-        </div>
+        <CardHeading
+          marker="HIS"
+          title="最近问答"
+          action={
+            <button type="button" onClick={onRefreshHistory}>
+              刷新历史
+            </button>
+          }
+        />
         {chatHistory.length ? (
           <div className="history-list">
             {chatHistory.map((item) => (

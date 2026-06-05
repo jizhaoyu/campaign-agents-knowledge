@@ -1,5 +1,6 @@
 import { FormEvent } from 'react';
 import { AskResult, SimilarTicket, SubmitTicketResult, TicketDraft } from '../api';
+import { CardHeading } from '../components/CardHeading';
 import { ListEmpty } from '../components/ListEmpty';
 
 export function TicketPanel({
@@ -9,7 +10,8 @@ export function TicketPanel({
   similarTickets,
   onGenerateDraft,
   onLoadSimilarTickets,
-  onSubmitTicket
+  onSubmitTicket,
+  onCopyTicketId
 }: {
   askResult: AskResult | null;
   ticketDraft: TicketDraft | null;
@@ -18,14 +20,12 @@ export function TicketPanel({
   onGenerateDraft: () => void;
   onLoadSimilarTickets: () => void;
   onSubmitTicket: (event: FormEvent<HTMLFormElement>) => void;
+  onCopyTicketId: (ticketId: number) => void;
 }) {
   return (
     <section id="工单" className="section-grid wide-left">
       <article className="card">
-        <div className="card-heading">
-          <span>04</span>
-          <h2>工单草稿</h2>
-        </div>
+        <CardHeading marker="04" title="工单草稿" />
         <div className="button-row">
           <button type="button" onClick={onGenerateDraft} disabled={!askResult}>
             生成草稿
@@ -58,22 +58,34 @@ export function TicketPanel({
       </article>
 
       <article className="card">
-        <div className="card-heading">
-          <span>SIM</span>
-          <h2>相似工单</h2>
-        </div>
+        <CardHeading marker="SIM" title="相似工单" />
         <ListEmpty show={!similarTickets.length} text="暂无相似工单结果" />
         {similarTickets.map((ticket) => (
-          <div className="list-item" key={ticket.ticketId}>
-            <strong>{ticket.title}</strong>
-            <span>
-              {ticket.priority} / {ticket.status} / score {ticket.score}
-            </span>
+          <div className="list-item similar-ticket-item" key={ticket.ticketId}>
+            <div>
+              <strong>{ticket.title}</strong>
+              <span>
+                {ticket.priority} / {ticket.status} / score {ticket.score}
+              </span>
+            </div>
+            <p>{ticket.matchSummary || '暂无相似原因'}</p>
+            {ticket.matchedKeywords.length > 0 && (
+              <div className="tag-row" aria-label={`工单 #${ticket.ticketId} 命中关键词`}>
+                {ticket.matchedKeywords.map((keyword) => (
+                  <span key={keyword}>{keyword}</span>
+                ))}
+              </div>
+            )}
           </div>
         ))}
         {submitResult && (
           <div className="result-box">
-            <strong>Ticket #{submitResult.ticketId}</strong>
+            <div className="result-heading">
+              <strong>Ticket #{submitResult.ticketId}</strong>
+              <button type="button" onClick={() => onCopyTicketId(submitResult.ticketId)}>
+                复制工单号
+              </button>
+            </div>
             <span>{submitResult.status}</span>
             <small>{submitResult.approvalRequired ? `审批 #${submitResult.approvalTaskId}` : '直接进入 OPEN'}</small>
           </div>

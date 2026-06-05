@@ -75,6 +75,16 @@ class DocumentPaginationSmokeTest {
 
         mockMvc.perform(get("/api/v1/documents")
                         .param("knowledgeBaseId", knowledgeBase.getId().toString())
+                        .param("keyword", "failure-" + suffix)
+                        .param("indexStatus", "FAILED")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.length()").value(1))
+                .andExpect(jsonPath("$.data[0].fileName").value("vpn-failure-" + suffix + ".md"))
+                .andExpect(jsonPath("$.data[0].indexStatus").value("FAILED"));
+
+        mockMvc.perform(get("/api/v1/documents")
+                        .param("knowledgeBaseId", knowledgeBase.getId().toString())
                         .param("page", "-1")
                         .param("size", "10")
                         .header("Authorization", "Bearer " + adminToken))

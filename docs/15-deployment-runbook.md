@@ -58,6 +58,20 @@
 mvn spring-boot:run
 ```
 
+### 前后端一体化 Jar
+
+生产或演示环境可以把前端构建产物打进 Spring Boot Jar，减少单独部署 Vite/Nginx 的步骤：
+
+```powershell
+cd frontend
+npm run build
+cd ..
+mvn -Pfrontend package
+java -jar target/knowledge-ticket-agent-0.0.1-SNAPSHOT.jar
+```
+
+`frontend` profile 只复制当前构建需要的 `index.html`、`favicon.svg`、`assets/index.js` 和 `assets/index.css`，并会先清理 `target/classes/static`，避免旧 hash 静态资源进入 Jar。应用会对 `/dashboard`、`/knowledge`、`/chat`、`/tickets`、`/approvals`、`/ai-config`、`/users`、`/sessions`、`/audits` 做 SPA fallback；`/api/**` 仍按 Bearer token 鉴权。
+
 ### MySQL 启动
 
 业务库名称建议使用 `agentdb`。在未明确获得授权前，自动化助手只能做 MySQL 读操作核对，不执行建库、迁移、删除、更新等写操作。
@@ -72,6 +86,8 @@ mvn spring-boot:run "-Dspring-boot.run.profiles=mysql"
 ```
 
 启动 `mysql` profile 后，Flyway 会使用 `classpath:db/mysql` 迁移脚本在目标业务库中建表和写入种子账号。
+
+代码侧通过 `MysqlSchemaEntityAlignmentTest` 静态比对 `src/main/resources/db/mysql/*.sql` 与 JPA 实体表/列，防止实体字段新增后漏写 MySQL 迁移。该测试只读本地 SQL 文件和注解，不连接 MySQL；真实环境仍需要在你明确授权后再启动 `mysql` profile 做运行验收。
 
 ### OpenAI-compatible 启动
 
@@ -92,6 +108,8 @@ Codex 本机配置可作为参考映射：
 
 注意：Codex 的 `wire_api = "responses"` 不等同于本项目的 Spring AI Chat Completions 调用。如果供应商不支持 `/chat/completions`，当前 `ai-openai` profile 不能直接使用该供应商。
 
+启动后可用管理员账号打开前端 `AI配置` 页面，或调用 `GET /api/v1/ai/runtime` 检查 active profiles、chat/embedding provider、baseUrl、path、model、凭证是否配置和模型 Bean 是否存在。该接口只返回布尔状态，不返回 API key 明文。
+
 ## 启动后检查
 
 - 登录接口可用
@@ -108,6 +126,7 @@ Codex 本机配置可作为参考映射：
 - 问答接口可返回结果
 - 无证据或低于 RAG 阈值的问题返回 `fallback=true`、`confidence=NONE`
 - 审批列表接口可访问
+- 管理员可访问 `/api/v1/ai/runtime`，响应不包含 `OPENAI_API_KEY`、`OPENAI_COMPATIBLE_API_KEY` 或实际 key 值
 
 ## 文档索引线程池
 
@@ -178,6 +197,7 @@ Codex 本机配置可作为参考映射：
 - 供应商是否支持 `/chat/completions`
 - `OPENAI_CHAT_MODEL` 是否为供应商实际开放的模型名
 - 如果供应商不支持 embeddings，确认 `OPENAI_EMBEDDING_PROVIDER=none` 且 `OPENAI_EMBEDDING_ENABLED=false`
+- 访问前端 `AI配置` 页或 `/api/v1/ai/runtime`，查看 `readinessLevel`、`warnings`、`modelAvailable` 和 `credentialConfigured`
 
 ### 审批通过后未开单
 

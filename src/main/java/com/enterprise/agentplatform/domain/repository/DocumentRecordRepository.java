@@ -13,6 +13,16 @@ public interface DocumentRecordRepository extends JpaRepository<DocumentRecord, 
 
     List<DocumentRecord> findByKnowledgeBaseIdOrderByIdDesc(Long knowledgeBaseId);
 
+    List<DocumentRecord> findByKnowledgeBaseIdAndIndexStatusOrderByIdDesc(Long knowledgeBaseId, ProcessingStatus indexStatus);
+
+    List<DocumentRecord> findByKnowledgeBaseIdAndFileNameContainingIgnoreCaseOrderByIdDesc(Long knowledgeBaseId, String keyword);
+
+    List<DocumentRecord> findByKnowledgeBaseIdAndIndexStatusAndFileNameContainingIgnoreCaseOrderByIdDesc(
+            Long knowledgeBaseId,
+            ProcessingStatus indexStatus,
+            String keyword
+    );
+
     Page<DocumentRecord> findByKnowledgeBaseId(Long knowledgeBaseId, Pageable pageable);
 
     Page<DocumentRecord> findByKnowledgeBaseIdAndIndexStatus(Long knowledgeBaseId, ProcessingStatus indexStatus, Pageable pageable);

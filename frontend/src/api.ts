@@ -89,6 +89,8 @@ export type SimilarTicket = {
   priority: string;
   status: string;
   score: number;
+  matchedKeywords: string[];
+  matchSummary: string;
 };
 
 export type ApprovalTask = {
@@ -125,6 +127,25 @@ export type OperationsDashboard = {
   generatedAt: string;
 };
 
+export type AiRuntimeComponent = {
+  enabled: boolean;
+  modelAvailable: boolean;
+  credentialConfigured: boolean;
+  provider: string;
+  baseUrl: string | null;
+  path: string | null;
+  model: string | null;
+};
+
+export type AiRuntimeStatus = {
+  activeProfiles: string[];
+  chat: AiRuntimeComponent;
+  embedding: AiRuntimeComponent;
+  readinessLevel: 'READY' | 'PARTIAL' | 'DISABLED';
+  warnings: string[];
+  generatedAt: string;
+};
+
 export type AuditLog = {
   id: number;
   actorId: number;
@@ -136,6 +157,13 @@ export type AuditLog = {
 };
 
 export type AuditLogPage = PageResponse<AuditLog>;
+
+export type AuditLogFilters = {
+  traceId: string;
+  eventType: string;
+  targetType: string;
+  targetId: string;
+};
 
 export type UserAdmin = {
   id: number;

@@ -1,10 +1,22 @@
 import { Session } from '../api';
 
 export type WorkspaceNavItem = {
-  id: string;
+  id: WorkspaceRouteId;
   label: string;
+  path: string;
   permissions?: string[];
 };
+
+export type WorkspaceRouteId =
+  | 'dashboard'
+  | 'knowledge'
+  | 'chat'
+  | 'tickets'
+  | 'approvals'
+  | 'ai-config'
+  | 'users'
+  | 'sessions'
+  | 'audits';
 
 export const Permission = {
   knowledgeManage: 'knowledge:manage',
@@ -29,15 +41,18 @@ const fallbackPermissionsByRole: Record<string, string[]> = {
   SUPPORT: []
 };
 
+export const defaultWorkspaceRouteId: WorkspaceRouteId = 'dashboard';
+
 export const workspaceNavItems: WorkspaceNavItem[] = [
-  { id: '总览', label: '总览' },
-  { id: '知识库', label: '知识库' },
-  { id: '问答', label: '问答' },
-  { id: '工单', label: '工单' },
-  { id: '审批', label: '审批', permissions: [Permission.approvalReview] },
-  { id: '用户', label: '用户', permissions: [Permission.userAdmin] },
-  { id: '会话', label: '会话', permissions: [Permission.tokenSessionAdmin] },
-  { id: '审计', label: '审计', permissions: [Permission.auditRead] }
+  { id: 'dashboard', label: '总览', path: '/dashboard' },
+  { id: 'knowledge', label: '知识库', path: '/knowledge' },
+  { id: 'chat', label: '问答', path: '/chat' },
+  { id: 'tickets', label: '工单', path: '/tickets' },
+  { id: 'approvals', label: '审批', path: '/approvals', permissions: [Permission.approvalReview] },
+  { id: 'ai-config', label: 'AI配置', path: '/ai-config', permissions: [Permission.dashboardRead] },
+  { id: 'users', label: '用户', path: '/users', permissions: [Permission.userAdmin] },
+  { id: 'sessions', label: '会话', path: '/sessions', permissions: [Permission.tokenSessionAdmin] },
+  { id: 'audits', label: '审计', path: '/audits', permissions: [Permission.auditRead] }
 ];
 
 export function hasRole(session: Session | null, role: string) {
@@ -75,10 +90,30 @@ export function canReadDashboard(session: Session | null) {
   return hasPermission(session, Permission.dashboardRead);
 }
 
+export function canAdministerUsers(session: Session | null) {
+  return hasPermission(session, Permission.userAdmin);
+}
+
+export function canAdministerTokenSessions(session: Session | null) {
+  return hasPermission(session, Permission.tokenSessionAdmin);
+}
+
+export function canReadAudits(session: Session | null) {
+  return hasPermission(session, Permission.auditRead);
+}
+
 export function canAdministerPlatform(session: Session | null) {
   return hasAnyPermission(session, [Permission.auditRead, Permission.userAdmin, Permission.tokenSessionAdmin]);
 }
 
-export function visibleWorkspaceNavItems(session: Session) {
+export function visibleWorkspaceNavItems(session: Session | null) {
   return workspaceNavItems.filter((item) => !item.permissions || hasAnyPermission(session, item.permissions));
+}
+
+export function workspaceRouteFromPath(pathname: string): WorkspaceRouteId {
+  return workspaceNavItems.find((item) => item.path === pathname)?.id ?? defaultWorkspaceRouteId;
+}
+
+export function workspacePathFor(routeId: WorkspaceRouteId) {
+  return workspaceNavItems.find((item) => item.id === routeId)?.path ?? '/dashboard';
 }

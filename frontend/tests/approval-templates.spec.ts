@@ -119,6 +119,7 @@ test('applies editable approval comment templates when deciding tasks', async ({
 
   await page.goto('/');
   await page.getByRole('button', { name: '进入工作台' }).click();
+  await page.getByRole('link', { name: '审批' }).click();
   await page.getByRole('button', { name: '刷新待审批' }).click();
 
   await page.getByLabel('通过模板').selectOption('APPROVE_EVIDENCE_SUFFICIENT');

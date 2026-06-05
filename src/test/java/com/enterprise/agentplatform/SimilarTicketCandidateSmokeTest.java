@@ -47,7 +47,10 @@ class SimilarTicketCandidateSmokeTest {
                         .header("Authorization", "Bearer " + adminToken))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data[0].ticketId").value(matchedTicket.getId()))
-                .andExpect(jsonPath("$.data[0].score").value(org.hamcrest.Matchers.greaterThan(0)));
+                .andExpect(jsonPath("$.data[0].score").value(org.hamcrest.Matchers.greaterThan(0)))
+                .andExpect(jsonPath("$.data[0].matchedKeywords").isArray())
+                .andExpect(jsonPath("$.data[0].matchedKeywords").value(org.hamcrest.Matchers.hasItem("vpn")))
+                .andExpect(jsonPath("$.data[0].matchSummary").value(org.hamcrest.Matchers.containsString("命中关键词")));
     }
 
     private Ticket createTicket(String title, String description) {

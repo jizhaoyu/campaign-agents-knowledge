@@ -1,14 +1,18 @@
 import { ReactNode } from 'react';
 import { Session } from '../api';
-import { visibleWorkspaceNavItems } from '../auth/permissions';
+import { WorkspaceRouteId, visibleWorkspaceNavItems } from '../auth/permissions';
 
 export function Shell({
   session,
   onLogout,
+  activeRouteId,
+  onNavigate,
   children
 }: {
   session: Session;
   onLogout: () => void;
+  activeRouteId: WorkspaceRouteId;
+  onNavigate: (routeId: WorkspaceRouteId) => void;
   children: ReactNode;
 }) {
   const navigationItems = visibleWorkspaceNavItems(session);
@@ -25,7 +29,16 @@ export function Shell({
         </div>
         <nav aria-label="工作台导航">
           {navigationItems.map((item) => (
-            <a key={item.id} href={`#${item.id}`} className="nav-link">
+            <a
+              key={item.id}
+              href={item.path}
+              className={`nav-link${item.id === activeRouteId ? ' active' : ''}`}
+              aria-current={item.id === activeRouteId ? 'page' : undefined}
+              onClick={(event) => {
+                event.preventDefault();
+                onNavigate(item.id);
+              }}
+            >
               {item.label}
             </a>
           ))}

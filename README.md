@@ -60,20 +60,23 @@
 - 登录成功、失败、临时锁定和登出审计；登录失败临时锁定、管理员用户状态查看和账号解锁
 - 管理员 token 会话查看、单会话吊销和按用户批量吊销
 - 登录响应返回细粒度权限清单，后端按权限字符串授权，前端按权限收敛入口
-- 前端角色感知导航，普通用户不展示管理员/审批入口，也不会自动请求管理员文档管理接口
+- 前端客户端路由工作台，知识库、问答、工单、审批、用户、会话、审计拥有独立 URL
+- 前端角色感知导航，普通用户不展示管理员/审批入口，也不会自动请求管理员文档管理接口；用户、会话、审计入口按细粒度权限分别展示
 - 管理员运营指标总览，展示索引队列、失败索引、待审批、高风险工单和活跃 token 会话
 - 运营总览返回健康等级、告警数量、健康摘要和建议动作，帮助管理员优先处理失败索引和高风险阻塞项
-- 管理员用户状态、token 会话和审计日志分页查询，避免管理面板全量加载
+- 管理员 AI 运行配置页，可查看 chat/embedding 启用状态、provider、baseUrl、path、model、凭证是否配置和模型 Bean 是否可用，页面不展示 API key
+- 管理员用户状态、token 会话和审计日志分页查询，审计页支持按 traceId、事件和目标过滤并以时间线方式回看调用链
 - 知识库创建
 - 文档上传、本地存储、TXT/Markdown/PDF/DOCX 文本提取
 - 文档列表服务端分页、搜索、状态筛选、后台索引状态轮询、失败重试、删除和重建索引入口
 - 持久化文档索引任务队列、文本切片和入库
 - 基于关键词匹配的默认问答链路
 - 问答区支持最近会话历史，当前用户可恢复历史回答继续生成工单
-- 相似工单检索使用关键词候选集和内存评分，避免全表加载历史工单
+- 前端支持复制引用片段和已提交工单号，便于带证据沟通和审批流转
+- 相似工单检索使用关键词候选集和内存评分，返回命中关键词与相似原因，避免全表加载历史工单
 - 可选 Spring AI + OpenAI chat/embedding 接入
 - 工单草稿生成、提交、审批，审批备注支持标准模板和人工编辑
-- 审计日志查询
+- 审计日志查询、traceId 复制和调用链回看
 
 默认模式不需要 API key，会使用本地关键词检索和规则式答案生成。启用 `ai-openai` profile 后，会走 OpenAI-compatible Chat API；默认 chat 模型为 `gpt-5.4`，适配官方 OpenAI 或中转站。embedding 默认关闭，需要时单独启用。
 
@@ -111,7 +114,7 @@ access token 默认 2 小时过期，可通过 `app.security.token-ttl-seconds` 
 
 ### 启动前端简版
 
-前端位于 `frontend/`，本地开发时通过 Vite 代理访问 Spring Boot 的 `/api`：
+前端位于 `frontend/`，本地开发时通过 Vite 代理访问 Spring Boot 的 `/api`。登录后会进入 `/dashboard`，并可通过 `/knowledge`、`/chat`、`/tickets`、`/approvals`、`/ai-config`、`/users`、`/sessions`、`/audits` 访问独立工作台页面：
 
 ```bash
 cd frontend
@@ -131,9 +134,9 @@ npm run build
 npm run e2e
 ```
 
-`npm run e2e` 会通过 Playwright 覆盖“登录 -> 创建知识库 -> 上传文档 -> 文档状态刷新 -> 提问 -> 生成并提交工单”的核心链路。运行前需要后端可访问 `http://localhost:8080`。
+`npm run e2e` 会通过 Playwright 覆盖“登录 -> 创建知识库 -> 上传文档 -> 文档状态刷新 -> 提问 -> 生成并提交工单”的核心链路；核心用例默认 mock API 响应，可在没有真实后端的情况下验证前端行为。
 
-如果后端运行在其他端口，可通过环境变量覆盖 Vite 代理：
+如果要做真实后端联调，后端默认代理地址为 `http://localhost:8080`。后端运行在其他端口时，可通过环境变量覆盖 Vite 代理：
 
 ```powershell
 $env:VITE_API_TARGET='http://localhost:18080'
@@ -141,6 +144,19 @@ $env:FRONTEND_PORT='5174'
 $env:PLAYWRIGHT_REUSE_SERVER='false'
 npm run e2e
 ```
+
+### 构建前后端一体化 Jar
+
+先构建前端，再用 `frontend` Maven profile 把 `frontend/dist` 中的当前产物复制进 Spring Boot 静态资源目录：
+
+```powershell
+cd frontend
+npm run build
+cd ..
+mvn -Pfrontend package
+```
+
+生成的 Jar 会内置 `index.html`、`favicon.svg`、`assets/index.js` 和 `assets/index.css`。后端会对 `/dashboard`、`/knowledge`、`/chat`、`/tickets`、`/approvals`、`/ai-config`、`/users`、`/sessions`、`/audits` 做 SPA fallback，同时继续保护 `/api/**` 接口。
 
 ### 启动 OpenAI-compatible 模式
 
@@ -171,6 +187,8 @@ mvn spring-boot:run "-Dspring-boot.run.profiles=ai-openai"
 - `OPENAI_EMBEDDINGS_PATH`，默认 `/embeddings`
 
 如果中转站只提供 chat 模型，不要开启 embedding。此时系统仍会使用关键词检索，答案由配置的 chat 模型生成。
+
+管理员可在前端 `AI配置` 页面或通过 `GET /api/v1/ai/runtime` 查看当前运行配置状态。接口只返回是否已配置凭证，不返回 `OPENAI_API_KEY` 或 `OPENAI_COMPATIBLE_API_KEY` 的明文值。
 
 注意：Codex 的 `wire_api = "responses"` 是 Codex 客户端自己的协议配置；本项目当前通过 Spring AI 调用 OpenAI-compatible `/chat/completions`。如果中转站只支持 Responses API 而不支持 Chat Completions，需要更换兼容端点或后续新增 Responses API 适配。
 
