@@ -2,6 +2,7 @@ import { AiRuntimeComponent, AiRuntimeStatus } from '../api';
 import { CardHeading } from '../components/CardHeading';
 import { InlineRetry } from '../components/InlineRetry';
 import { ListEmpty } from '../components/ListEmpty';
+import { SkeletonBlock } from '../components/SkeletonBlock';
 
 function availabilityLabel(value: boolean) {
   return value ? '就绪' : '缺失';
@@ -91,6 +92,7 @@ export function AiRuntimePanel({
     DISABLED: '已关闭'
   } as const;
   const readinessLevel = aiRuntimeStatus?.readinessLevel ?? 'DISABLED';
+  const showAiRuntimeSkeleton = aiRuntimeStatusLoading && !aiRuntimeStatus && !aiRuntimeStatusError;
 
   return (
     <section className="section-grid ai-runtime-section">
@@ -104,16 +106,22 @@ export function AiRuntimePanel({
             </button>
           }
         />
-        <div className={`ai-readiness ${readinessLevel.toLowerCase()}`}>
-          <strong>{readinessText[readinessLevel]}</strong>
-          <span>不展示 API key，只展示是否已配置凭证。</span>
-        </div>
-        <p className="hint compact">更新时间：{generatedAt}</p>
-        <div className="tag-row" aria-label="AI profile">
-          {(aiRuntimeStatus?.activeProfiles.length ? aiRuntimeStatus.activeProfiles : ['default']).map((profile) => (
-            <span key={profile}>{profile}</span>
-          ))}
-        </div>
+        {showAiRuntimeSkeleton ? (
+          <SkeletonBlock label="AI 运行配置概览骨架" lines={3} variant="panel" />
+        ) : (
+          <>
+            <div className={`ai-readiness ${readinessLevel.toLowerCase()}`}>
+              <strong>{readinessText[readinessLevel]}</strong>
+              <span>不展示 API key，只展示是否已配置凭证。</span>
+            </div>
+            <p className="hint compact">更新时间：{generatedAt}</p>
+            <div className="tag-row" aria-label="AI profile">
+              {(aiRuntimeStatus?.activeProfiles.length ? aiRuntimeStatus.activeProfiles : ['default']).map((profile) => (
+                <span key={profile}>{profile}</span>
+              ))}
+            </div>
+          </>
+        )}
       </article>
 
       <article className="card ai-runtime-guidance">
@@ -127,8 +135,9 @@ export function AiRuntimePanel({
             loading={aiRuntimeStatusLoading}
           />
         )}
+        {showAiRuntimeSkeleton && <SkeletonBlock label="AI 启动检查骨架" lines={2} variant="panel" />}
         <ListEmpty
-          show={!aiRuntimeStatus && !aiRuntimeStatusError}
+          show={!aiRuntimeStatus && !aiRuntimeStatusError && !showAiRuntimeSkeleton}
           text={aiRuntimeStatusLoading ? '正在读取 AI 运行状态...' : '点击刷新配置加载 AI 运行状态'}
         />
         {aiRuntimeStatus && (
@@ -140,6 +149,12 @@ export function AiRuntimePanel({
         )}
       </article>
 
+      {showAiRuntimeSkeleton && (
+        <article className="card ai-runtime-details">
+          <CardHeading marker="11" title="组件状态" />
+          <SkeletonBlock label="AI 组件状态骨架" lines={4} variant="panel" />
+        </article>
+      )}
       {aiRuntimeStatus && (
         <article className="card ai-runtime-details">
           <CardHeading marker="11" title="组件状态" />

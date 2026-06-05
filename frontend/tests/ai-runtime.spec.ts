@@ -168,12 +168,17 @@ test('keeps AI runtime refresh single-flight while loading', async ({ page }) =>
   await page.getByRole('button', { name: '进入工作台' }).click();
   await page.getByRole('link', { name: 'AI配置' }).click();
 
-  await expect(page.getByText('正在读取 AI 运行状态...')).toBeVisible();
+  await expect(page.getByLabel('AI 运行配置概览骨架')).toBeVisible();
+  await expect(page.getByLabel('AI 启动检查骨架')).toBeVisible();
+  await expect(page.getByLabel('AI 组件状态骨架')).toBeVisible();
   await expect(page.getByRole('button', { name: '刷新中...' })).toBeDisabled();
   await page.getByRole('button', { name: '刷新中...' }).click({ force: true });
   expect(runtimeRequestCount).toBe(1);
 
   releaseRuntimeResponse?.();
+  await expect(page.getByLabel('AI 运行配置概览骨架')).toHaveCount(0);
+  await expect(page.getByLabel('AI 启动检查骨架')).toHaveCount(0);
+  await expect(page.getByLabel('AI 组件状态骨架')).toHaveCount(0);
   await expect(page.getByRole('button', { name: '刷新配置' })).toBeEnabled();
   await expect(page.getByText('可用')).toBeVisible();
   expect(runtimeRequestCount).toBe(1);

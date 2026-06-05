@@ -1,6 +1,7 @@
 import { AskResult, KnowledgeBase, OperationsDashboard, SubmitTicketResult } from '../api';
 import { InlineRetry } from '../components/InlineRetry';
 import { Metric } from '../components/Metric';
+import { SkeletonBlock } from '../components/SkeletonBlock';
 
 export function DashboardMetrics({
   knowledgeBases,
@@ -32,6 +33,7 @@ export function DashboardMetrics({
   } as const;
   const healthLevel = operationsDashboard?.healthLevel ?? 'HEALTHY';
   const percent = (value: number) => `${Math.round(value * 100)}%`;
+  const showOperationsSkeleton = canReadDashboard && operationsDashboardLoading && !operationsDashboard && !operationsDashboardError;
 
   return (
     <section id="总览" className="metric-section">
@@ -77,6 +79,14 @@ export function DashboardMetrics({
             <Metric title="活跃会话" value={operationsDashboard.activeTokenSessionCount} caption="未吊销且未过期 Token 会话" />
           </>
         )}
+        {showOperationsSkeleton && (
+          <>
+            <SkeletonBlock label="运营指标骨架-索引队列" />
+            <SkeletonBlock label="运营指标骨架-失败率" />
+            <SkeletonBlock label="运营指标骨架-积压压力" />
+            <SkeletonBlock label="运营指标骨架-高风险工单" />
+          </>
+        )}
       </div>
       {operationsDashboard && (
         <div className={`health-panel ${operationsDashboard.healthLevel.toLowerCase()}`}>
@@ -94,6 +104,7 @@ export function DashboardMetrics({
           </ul>
         </div>
       )}
+      {showOperationsSkeleton && <SkeletonBlock label="运营摘要骨架" lines={3} variant="panel" />}
       {canReadDashboard && operationsDashboardError && (
         <InlineRetry
           title={operationsDashboard ? '运营指标刷新失败' : '运营指标加载失败'}

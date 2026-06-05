@@ -140,11 +140,15 @@ test('keeps operations dashboard refresh single-flight while loading', async ({ 
   await page.getByRole('button', { name: '进入工作台' }).click();
 
   await expect(page.getByText('运营指标正在刷新...')).toBeVisible();
+  await expect(page.getByLabel('运营指标骨架-索引队列')).toBeVisible();
+  await expect(page.getByLabel('运营摘要骨架')).toBeVisible();
   await expect(page.getByRole('button', { name: '刷新中...' })).toBeDisabled();
   await page.getByRole('button', { name: '刷新中...' }).click({ force: true });
   expect(dashboardRequestCount).toBe(1);
 
   releaseDashboardResponse?.();
+  await expect(page.getByLabel('运营指标骨架-索引队列')).toHaveCount(0);
+  await expect(page.getByLabel('运营摘要骨架')).toHaveCount(0);
   await expect(page.getByRole('button', { name: '刷新运营指标' })).toBeEnabled();
   await expect(page.getByText('失败率 20% / 积压压力 42%')).toBeVisible();
   expect(dashboardRequestCount).toBe(1);

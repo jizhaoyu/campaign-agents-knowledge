@@ -17,6 +17,7 @@
 - 2026-06-06：增加知识库搜索，后端 `GET /knowledge-bases?keyword=` 按名称或说明过滤，前端选择器输入框携带关键词刷新列表
 - 2026-06-06：运营指标和 AI 运行配置加载失败时展示原位错误和重试按钮，重试成功后清除错误并恢复页面数据
 - 2026-06-06：运营指标和 AI 运行配置刷新增加加载态与单飞保护，请求期间按钮禁用并展示正在刷新提示
+- 2026-06-06：运营总览和 AI 运行配置首屏等待状态增加轻量骨架屏，避免首次读接口时出现空白面板
 - 2026-06-06：运营总览增加索引失败率、积压压力和运营待办合计卡片，健康摘要同步展示压力百分比
 - 2026-06-06：抽出 `hooks/knowledgeDocumentState.ts`，文档列表按 id 合并、索引状态变更提示和分页越界归一化改为纯函数
 - 2026-06-06：拆分 `KnowledgePanel.tsx` 为知识库选择、文档上传和文档管理 section，并抽出文档行渲染组件
@@ -59,7 +60,7 @@
 ## P2 - 体验优化
 
 - 引入 Tailwind CSS 或 shadcn/ui，沉淀统一 Button、Input、Card、Table、Toast 组件
-- 增加更完整的骨架屏
+- 扩展骨架屏到更多业务页和表格列表
 
 ## P3 - 产品化方向
 
@@ -72,5 +73,5 @@
 - 当前文档管理已支持列表、服务端搜索、服务端状态筛选、分页大小选择、分页、轮询、重建、失败重试和删除；管理端用户/会话/审计列表已分页且前端入口已按权限细分
 - 当前接口路径和 payload 已抽到 `services/workspaceApi.ts`，认证请求已抽到 `hooks/useAuthenticatedRequest.ts`，知识库/文档状态已抽到 `hooks/useKnowledgeWorkspace.ts`，问答状态已抽到 `hooks/useChatWorkspace.ts`，工单状态已抽到 `hooks/useTicketWorkspace.ts`，审批状态已抽到 `hooks/useApprovalWorkspace.ts`，审计/用户/Token 会话状态已抽到 `hooks/useAdminWorkspace.ts`，运营指标和 AI 配置运行态已抽到 `hooks/useOperationsWorkspace.ts`；后续应优先做失败场景 E2E 和组件级整理
 - 当前样式是原生 CSS，适合第一版；多人协作后建议迁移到设计 token + 组件库
-- 当前已有 Playwright 核心 E2E，并覆盖复制成功/剪贴板不可用降级、运营/AI 刷新加载态单飞保护、运营/AI 加载失败原位重试恢复、文档上传校验失败、审批业务冲突、AI 配置读取后端异常、AI 配置网络不可达、知识问答网络不可达和工单提交网络不可达；后续应补单元测试和更多边界失败场景 E2E
+- 当前已有 Playwright 核心 E2E，并覆盖复制成功/剪贴板不可用降级、运营/AI 首屏骨架屏、运营/AI 刷新加载态单飞保护、运营/AI 加载失败原位重试恢复、文档上传校验失败、审批业务冲突、AI 配置读取后端异常、AI 配置网络不可达、知识问答网络不可达和工单提交网络不可达；后续应补单元测试和更多边界失败场景 E2E
 - 当前 Vite 代理默认后端端口为 `8080`，已支持通过 `VITE_API_TARGET` 覆盖；后续可补 `.env.example`
