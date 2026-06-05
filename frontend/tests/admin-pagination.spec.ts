@@ -4,6 +4,9 @@ test('uses paged admin management requests for audits users and token sessions',
   const auditRequests: string[] = [];
   const userRequests: string[] = [];
   const sessionRequests: string[] = [];
+  let releaseAuditResponse: (() => void) | null = null;
+  let releaseUserResponse: (() => void) | null = null;
+  let releaseSessionResponse: (() => void) | null = null;
 
   await page.route('**/api/v1/auth/login', async (route) => {
     await route.fulfill({
@@ -100,6 +103,11 @@ test('uses paged admin management requests for audits users and token sessions',
     const traceId = url.searchParams.get('traceId');
     const eventType = url.searchParams.get('eventType');
     const filtered = traceId === 'trace-audit-0' && eventType === 'USER_UNLOCKED';
+    if (auditRequests.length === 1) {
+      await new Promise<void>((resolve) => {
+        releaseAuditResponse = resolve;
+      });
+    }
     await route.fulfill({
       contentType: 'application/json',
       body: JSON.stringify({
@@ -133,6 +141,11 @@ test('uses paged admin management requests for audits users and token sessions',
     const url = new URL(route.request().url());
     sessionRequests.push(url.search);
     const pageNumber = Number(url.searchParams.get('page') || '0');
+    if (sessionRequests.length === 1) {
+      await new Promise<void>((resolve) => {
+        releaseSessionResponse = resolve;
+      });
+    }
     await route.fulfill({
       contentType: 'application/json',
       body: JSON.stringify({
@@ -175,6 +188,11 @@ test('uses paged admin management requests for audits users and token sessions',
     }
     userRequests.push(url.search);
     const pageNumber = Number(url.searchParams.get('page') || '0');
+    if (userRequests.length === 1) {
+      await new Promise<void>((resolve) => {
+        releaseUserResponse = resolve;
+      });
+    }
     await route.fulfill({
       contentType: 'application/json',
       body: JSON.stringify({
@@ -209,18 +227,30 @@ test('uses paged admin management requests for audits users and token sessions',
 
   await page.getByRole('link', { name: '用户' }).click();
   await page.getByRole('button', { name: '刷新用户' }).click();
+  await expect(page.getByLabel('用户列表骨架')).toBeVisible();
+  await expect(page.getByRole('button', { name: '刷新中...' })).toBeVisible();
+  releaseUserResponse?.();
+  await expect(page.getByLabel('用户列表骨架')).toHaveCount(0);
   await expect(page.getByText('系统管理员 / admin')).toBeVisible();
   await page.getByLabel('用户分页').getByRole('button', { name: '下一页' }).click();
   await expect(page.getByText('支持工程师 / support')).toBeVisible();
 
   await page.getByRole('link', { name: '会话' }).click();
   await page.getByRole('button', { name: '刷新会话' }).click();
+  await expect(page.getByLabel('会话列表骨架')).toBeVisible();
+  await expect(page.getByRole('button', { name: '刷新中...' })).toBeVisible();
+  releaseSessionResponse?.();
+  await expect(page.getByLabel('会话列表骨架')).toHaveCount(0);
   await expect(page.getByText('#21 / admin / REFRESHABLE')).toBeVisible();
   await page.getByLabel('会话分页').getByRole('button', { name: '下一页' }).click();
   await expect(page.getByText('#20 / support / REFRESHABLE')).toBeVisible();
 
   await page.getByRole('link', { name: '审计' }).click();
   await page.getByRole('button', { name: '查询审计' }).click();
+  await expect(page.getByLabel('审计时间线骨架')).toBeVisible();
+  await expect(page.getByRole('button', { name: '查询中...' })).toBeVisible();
+  releaseAuditResponse?.();
+  await expect(page.getByLabel('审计时间线骨架')).toHaveCount(0);
   await expect(page.getByText('USER_UNLOCKED')).toBeVisible();
   await page.getByLabel('审计分页').getByRole('button', { name: '下一页' }).click();
   await expect(page.getByText('TOKEN_SESSION_REVOKED')).toBeVisible();

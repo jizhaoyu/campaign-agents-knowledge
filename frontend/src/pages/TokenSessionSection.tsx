@@ -2,16 +2,19 @@ import { TokenSessionAdmin, TokenSessionAdminPage } from '../api';
 import { CardHeading } from '../components/CardHeading';
 import { ListEmpty } from '../components/ListEmpty';
 import { PaginationBar } from '../components/PaginationBar';
+import { SkeletonBlock } from '../components/SkeletonBlock';
 
 export function TokenSessionSection({
   tokenSessions,
   tokenSessionPage,
+  tokenSessionsLoading,
   onLoadTokenSessions,
   onChangeTokenSessionPage,
   onRevokeTokenSession
 }: {
   tokenSessions: TokenSessionAdmin[];
   tokenSessionPage: TokenSessionAdminPage | null;
+  tokenSessionsLoading: boolean;
   onLoadTokenSessions: () => void;
   onChangeTokenSessionPage: (page: number) => void;
   onRevokeTokenSession: (sessionId: number) => void;
@@ -20,7 +23,7 @@ export function TokenSessionSection({
     <article className="card">
       <CardHeading marker="07" title="Token 会话" />
       <button type="button" onClick={onLoadTokenSessions}>
-        刷新会话
+        {tokenSessionsLoading ? '刷新中...' : '刷新会话'}
       </button>
       <PaginationBar
         label="会话分页"
@@ -28,7 +31,8 @@ export function TokenSessionSection({
         visibleCount={tokenSessions.length}
         onChangePage={onChangeTokenSessionPage}
       />
-      <ListEmpty show={!tokenSessions.length} text="暂无会话数据" />
+      {tokenSessionsLoading && !tokenSessions.length && <SkeletonBlock label="会话列表骨架" lines={4} variant="panel" />}
+      <ListEmpty show={!tokenSessions.length && !tokenSessionsLoading} text="暂无会话数据" />
       {tokenSessions.map((session) => (
         <div className="list-item actionable" key={session.id}>
           <strong>

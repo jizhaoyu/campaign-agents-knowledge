@@ -13,6 +13,7 @@ export function KnowledgePanel({
   documentPageSize,
   documentKeyword,
   documentStatusFilter,
+  documentsLoading,
   canManageKnowledge,
   onSelectKnowledgeBase,
   onKnowledgeBaseKeywordChange,
@@ -36,6 +37,7 @@ export function KnowledgePanel({
   documentPageSize: number;
   documentKeyword: string;
   documentStatusFilter: string;
+  documentsLoading: boolean;
   canManageKnowledge: boolean;
   onSelectKnowledgeBase: (id: number | '') => void;
   onKnowledgeBaseKeywordChange: (keyword: string) => void;
@@ -73,6 +75,7 @@ export function KnowledgePanel({
           documentPageSize={documentPageSize}
           documentKeyword={documentKeyword}
           documentStatusFilter={documentStatusFilter}
+          documentsLoading={documentsLoading}
           onDocumentKeywordChange={onDocumentKeywordChange}
           onDocumentPageSizeChange={onDocumentPageSizeChange}
           onDocumentStatusFilterChange={onDocumentStatusFilterChange}

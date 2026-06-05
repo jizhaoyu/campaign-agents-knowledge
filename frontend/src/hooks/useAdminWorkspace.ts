@@ -45,8 +45,11 @@ export function useAdminWorkspace({
   const [auditLogFilters, setAuditLogFilters] = useState<AuditLogFilters>(emptyAuditLogFilters);
   const [users, setUsers] = useState<UserAdmin[]>([]);
   const [userPage, setUserPage] = useState<UserAdminPage | null>(null);
+  const [usersLoading, setUsersLoading] = useState(false);
   const [tokenSessions, setTokenSessions] = useState<TokenSessionAdmin[]>([]);
   const [tokenSessionPage, setTokenSessionPage] = useState<TokenSessionAdminPage | null>(null);
+  const [tokenSessionsLoading, setTokenSessionsLoading] = useState(false);
+  const [auditLogsLoading, setAuditLogsLoading] = useState(false);
 
   function resetAdminWorkspace() {
     setAuditLogs([]);
@@ -54,8 +57,11 @@ export function useAdminWorkspace({
     setAuditLogFilters(emptyAuditLogFilters);
     setUsers([]);
     setUserPage(null);
+    setUsersLoading(false);
     setTokenSessions([]);
     setTokenSessionPage(null);
+    setTokenSessionsLoading(false);
+    setAuditLogsLoading(false);
   }
 
   function updateAuditLogFilters(filters: AuditLogFilters) {
@@ -72,6 +78,7 @@ export function useAdminWorkspace({
       setNotice({ tone: 'warn', text: '审计目标 ID 必须是数字' });
       return;
     }
+    setAuditLogsLoading(true);
     try {
       const result = await workspaceApi.listAuditLogs(authRequest, token, {
         ...auditLogFilters,
@@ -83,6 +90,8 @@ export function useAdminWorkspace({
       setNotice({ tone: 'ok', text: `审计日志已刷新：共 ${result.data.totalItems} 条` });
     } catch (error) {
       handleRequestError(error);
+    } finally {
+      setAuditLogsLoading(false);
     }
   }
 
@@ -90,6 +99,7 @@ export function useAdminWorkspace({
     if (!token || !userAdmin) {
       return;
     }
+    setUsersLoading(true);
     try {
       const result = await workspaceApi.listUsers(authRequest, token, page);
       setUserPage(result.data);
@@ -97,6 +107,8 @@ export function useAdminWorkspace({
       setNotice({ tone: 'ok', text: `用户状态已刷新：共 ${result.data.totalItems} 个账号` });
     } catch (error) {
       handleRequestError(error);
+    } finally {
+      setUsersLoading(false);
     }
   }
 
@@ -117,6 +129,7 @@ export function useAdminWorkspace({
     if (!token || !tokenSessionAdmin) {
       return;
     }
+    setTokenSessionsLoading(true);
     try {
       const result = await workspaceApi.listTokenSessions(authRequest, token, page);
       setTokenSessionPage(result.data);
@@ -124,6 +137,8 @@ export function useAdminWorkspace({
       setNotice({ tone: 'ok', text: `Token 会话已刷新：共 ${result.data.totalItems} 条` });
     } catch (error) {
       handleRequestError(error);
+    } finally {
+      setTokenSessionsLoading(false);
     }
   }
 
@@ -164,8 +179,11 @@ export function useAdminWorkspace({
     auditLogFilters,
     users,
     userPage,
+    usersLoading,
     tokenSessions,
     tokenSessionPage,
+    tokenSessionsLoading,
+    auditLogsLoading,
     updateAuditLogFilters,
     loadAudits,
     loadUsers,

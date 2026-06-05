@@ -7,6 +7,7 @@ test('uses server-side pagination and filters for document management', async ({
     keyword: string | null;
     indexStatus: string | null;
   }> = [];
+  let releaseDocumentsResponse: (() => void) | null = null;
 
   await page.route('**/api/v1/auth/login', async (route) => {
     await route.fulfill({
@@ -114,6 +115,11 @@ test('uses server-side pagination and filters for document management', async ({
     const pageNumber = Number(url.searchParams.get('page') || '0');
     const keyword = url.searchParams.get('keyword');
     const status = url.searchParams.get('indexStatus');
+    if (documentRequests.length === 1) {
+      await new Promise<void>((resolve) => {
+        releaseDocumentsResponse = resolve;
+      });
+    }
     const isNoMatch = keyword === 'missing';
     const items =
       isNoMatch
@@ -174,6 +180,10 @@ test('uses server-side pagination and filters for document management', async ({
   await page.getByRole('button', { name: '进入工作台' }).click();
   await page.getByRole('link', { name: '知识库' }).click();
 
+  await expect(page.getByLabel('文档列表骨架')).toBeVisible();
+  await expect(page.getByRole('button', { name: '刷新中...' })).toBeVisible();
+  releaseDocumentsResponse?.();
+  await expect(page.getByLabel('文档列表骨架')).toHaveCount(0);
   await expect(page.getByText('vpn-page-1.md')).toBeVisible();
   await expect(page.getByText('第 1 / 2 页，共 11 个')).toBeVisible();
   await page.getByLabel('文档分页').getByRole('button', { name: '下一页' }).click();

@@ -50,6 +50,7 @@ export function useKnowledgeWorkspace({
   const [documentPageSize, setDocumentPageSize] = useState(DEFAULT_DOCUMENT_PAGE_SIZE);
   const [documentKeyword, setDocumentKeyword] = useState('');
   const [documentStatusFilter, setDocumentStatusFilter] = useState('');
+  const [documentsLoading, setDocumentsLoading] = useState(false);
   const deferredKnowledgeBaseKeyword = useDeferredValue(knowledgeBaseKeyword);
   const documentsRef = useRef<DocumentUpload[]>([]);
 
@@ -72,6 +73,7 @@ export function useKnowledgeWorkspace({
     setDocumentPageSize(DEFAULT_DOCUMENT_PAGE_SIZE);
     setDocumentKeyword('');
     setDocumentStatusFilter('');
+    setDocumentsLoading(false);
   }
 
   function requireText(form: FormData, field: string, label: string) {
@@ -158,6 +160,9 @@ export function useKnowledgeWorkspace({
       return;
     }
     const previousDocuments = documentsRef.current;
+    if (!options.announceTransitions) {
+      setDocumentsLoading(true);
+    }
     try {
       const page = options.page ?? documentPage?.page ?? 0;
       const result = await workspaceApi.listDocuments(authRequest, accessToken, {
@@ -181,6 +186,10 @@ export function useKnowledgeWorkspace({
       }
     } catch (error) {
       handleRequestError(error);
+    } finally {
+      if (!options.announceTransitions) {
+        setDocumentsLoading(false);
+      }
     }
   }
 
@@ -310,6 +319,7 @@ export function useKnowledgeWorkspace({
     documentPageSize,
     documentKeyword,
     documentStatusFilter,
+    documentsLoading,
     setSelectedKnowledgeBaseId,
     setKnowledgeBaseKeyword,
     setDocumentKeyword,

@@ -2,11 +2,13 @@ import { AuditLog, AuditLogFilters, AuditLogPage } from '../api';
 import { CardHeading } from '../components/CardHeading';
 import { ListEmpty } from '../components/ListEmpty';
 import { PaginationBar } from '../components/PaginationBar';
+import { SkeletonBlock } from '../components/SkeletonBlock';
 
 export function AuditTimelineSection({
   auditLogs,
   auditLogPage,
   auditLogFilters,
+  auditLogsLoading,
   onLoadAudits,
   onAuditLogFiltersChange,
   onCopyTraceId,
@@ -15,6 +17,7 @@ export function AuditTimelineSection({
   auditLogs: AuditLog[];
   auditLogPage: AuditLogPage | null;
   auditLogFilters: AuditLogFilters;
+  auditLogsLoading: boolean;
   onLoadAudits: () => void;
   onAuditLogFiltersChange: (filters: AuditLogFilters) => void;
   onCopyTraceId: (traceId: string) => void;
@@ -68,10 +71,11 @@ export function AuditTimelineSection({
         />
       </div>
       <button type="button" onClick={onLoadAudits}>
-        查询审计
+        {auditLogsLoading ? '查询中...' : '查询审计'}
       </button>
       <PaginationBar label="审计分页" page={auditLogPage} visibleCount={auditLogs.length} onChangePage={onChangeAuditPage} />
-      <ListEmpty show={!auditLogs.length} text="暂无审计数据" />
+      {auditLogsLoading && !auditLogs.length && <SkeletonBlock label="审计时间线骨架" lines={4} variant="panel" />}
+      <ListEmpty show={!auditLogs.length && !auditLogsLoading} text="暂无审计数据" />
       <div className="audit-timeline" aria-label="审计时间线">
         {auditLogs.map((log) => (
           <div className="audit-row" key={log.id}>

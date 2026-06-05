@@ -58,6 +58,7 @@ function App() {
     documentPageSize,
     documentKeyword,
     documentStatusFilter,
+    documentsLoading,
     setSelectedKnowledgeBaseId,
     setKnowledgeBaseKeyword,
     setDocumentKeyword,
@@ -119,8 +120,11 @@ function App() {
     auditLogFilters,
     users,
     userPage,
+    usersLoading,
     tokenSessions,
     tokenSessionPage,
+    tokenSessionsLoading,
+    auditLogsLoading,
     updateAuditLogFilters,
     loadAudits,
     loadUsers,
@@ -288,6 +292,7 @@ function App() {
               documentPageSize={documentPageSize}
               documentKeyword={documentKeyword}
               documentStatusFilter={documentStatusFilter}
+              documentsLoading={documentsLoading}
               canManageKnowledge={knowledgeManager}
               onSelectKnowledgeBase={setSelectedKnowledgeBaseId}
               onKnowledgeBaseKeywordChange={setKnowledgeBaseKeyword}
@@ -353,8 +358,11 @@ function App() {
               auditLogFilters={auditLogFilters}
               users={users}
               userPage={userPage}
+              usersLoading={usersLoading}
               tokenSessions={tokenSessions}
               tokenSessionPage={tokenSessionPage}
+              tokenSessionsLoading={tokenSessionsLoading}
+              auditLogsLoading={auditLogsLoading}
               canApprove={approvalReviewer}
               canManageUsers={userAdmin}
               canManageTokenSessions={tokenSessionAdmin}

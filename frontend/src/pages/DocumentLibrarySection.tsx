@@ -2,6 +2,7 @@ import { DocumentPage, DocumentUpload } from '../api';
 import { CardHeading } from '../components/CardHeading';
 import { ListEmpty } from '../components/ListEmpty';
 import { PaginationBar } from '../components/PaginationBar';
+import { SkeletonBlock } from '../components/SkeletonBlock';
 
 function DocumentRow({
   document,
@@ -61,6 +62,7 @@ export function DocumentLibrarySection({
   documentPageSize,
   documentKeyword,
   documentStatusFilter,
+  documentsLoading,
   onDocumentKeywordChange,
   onDocumentPageSizeChange,
   onDocumentStatusFilterChange,
@@ -77,6 +79,7 @@ export function DocumentLibrarySection({
   documentPageSize: number;
   documentKeyword: string;
   documentStatusFilter: string;
+  documentsLoading: boolean;
   onDocumentKeywordChange: (keyword: string) => void;
   onDocumentPageSizeChange: (size: number) => void;
   onDocumentStatusFilterChange: (status: string) => void;
@@ -90,6 +93,7 @@ export function DocumentLibrarySection({
   const pendingCount = documents.filter((document) => document.indexStatus === 'PENDING').length;
   const failedCount = documents.filter((document) => document.indexStatus === 'FAILED').length;
   const totalDocumentCount = documentPage?.totalItems ?? documents.length;
+  const showDocumentSkeleton = documentsLoading && documents.length === 0 && Boolean(selectedKnowledgeBaseId);
 
   return (
     <article className="card document-library">
@@ -98,7 +102,7 @@ export function DocumentLibrarySection({
         title="文档管理"
         action={
           <button type="button" onClick={onRefreshDocuments} disabled={!selectedKnowledgeBaseId}>
-            刷新列表
+            {documentsLoading ? '刷新中...' : '刷新列表'}
           </button>
         }
       />
@@ -140,8 +144,9 @@ export function DocumentLibrarySection({
           重试失败文档
         </button>
       </div>
+      {showDocumentSkeleton && <SkeletonBlock label="文档列表骨架" lines={4} variant="panel" />}
       <ListEmpty
-        show={documents.length === 0}
+        show={documents.length === 0 && !showDocumentSkeleton}
         variant="box"
         title={totalDocumentCount === 0 ? '还没有文档' : '没有匹配文档'}
         text={

@@ -1,8 +1,6 @@
 import { expect, test } from '@playwright/test';
 
 test('applies editable approval comment templates when deciding tasks', async ({ page }) => {
-  const approvalRequests: Array<{ path: string; body: unknown }> = [];
-
   await page.route('**/api/v1/auth/login', async (route) => {
     await route.fulfill({
       contentType: 'application/json',
@@ -95,10 +93,6 @@ test('applies editable approval comment templates when deciding tasks', async ({
   });
 
   await page.route('**/api/v1/approvals/91/approve', async (route) => {
-    approvalRequests.push({
-      path: new URL(route.request().url()).pathname,
-      body: route.request().postDataJSON()
-    });
     await route.fulfill({
       contentType: 'application/json',
       body: JSON.stringify({
@@ -126,15 +120,20 @@ test('applies editable approval comment templates when deciding tasks', async ({
   const approveComment = page.getByLabel('审批 #91 通过备注');
   await expect(approveComment).toHaveValue('已核对知识库引用和工单内容，证据充分，同意创建正式工单。');
   await approveComment.fill('已核对知识库引用和工单内容，证据充分，同意创建正式工单。SLA 4 小时内跟进。');
+  const approveRequestPromise = page.waitForRequest((request) => {
+    return request.method() === 'POST' && new URL(request.url()).pathname === '/api/v1/approvals/91/approve';
+  });
   await page.getByRole('button', { name: '通过' }).click();
+  const approveRequest = await approveRequestPromise;
 
-  expect(approvalRequests).toEqual([
-    {
-      path: '/api/v1/approvals/91/approve',
-      body: {
-        templateCode: 'APPROVE_EVIDENCE_SUFFICIENT',
-        comment: '已核对知识库引用和工单内容，证据充分，同意创建正式工单。SLA 4 小时内跟进。'
-      }
+  expect({
+    path: new URL(approveRequest.url()).pathname,
+    body: approveRequest.postDataJSON()
+  }).toEqual({
+    path: '/api/v1/approvals/91/approve',
+    body: {
+      templateCode: 'APPROVE_EVIDENCE_SUFFICIENT',
+      comment: '已核对知识库引用和工单内容，证据充分，同意创建正式工单。SLA 4 小时内跟进。'
     }
-  ]);
+  });
 });

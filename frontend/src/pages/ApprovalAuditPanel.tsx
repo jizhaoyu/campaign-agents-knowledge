@@ -23,8 +23,11 @@ export function ApprovalAuditPanel({
   auditLogFilters,
   users,
   userPage,
+  usersLoading,
   tokenSessions,
   tokenSessionPage,
+  tokenSessionsLoading,
+  auditLogsLoading,
   canApprove,
   canManageUsers,
   canManageTokenSessions,
@@ -51,8 +54,11 @@ export function ApprovalAuditPanel({
   auditLogFilters: AuditLogFilters;
   users: UserAdmin[];
   userPage: UserAdminPage | null;
+  usersLoading: boolean;
   tokenSessions: TokenSessionAdmin[];
   tokenSessionPage: TokenSessionAdminPage | null;
+  tokenSessionsLoading: boolean;
+  auditLogsLoading: boolean;
   canApprove: boolean;
   canManageUsers: boolean;
   canManageTokenSessions: boolean;
@@ -87,6 +93,7 @@ export function ApprovalAuditPanel({
         <UserStatusSection
           users={users}
           userPage={userPage}
+          usersLoading={usersLoading}
           onLoadUsers={onLoadUsers}
           onChangeUserPage={onChangeUserPage}
           onUnlockUser={onUnlockUser}
@@ -98,6 +105,7 @@ export function ApprovalAuditPanel({
         <TokenSessionSection
           tokenSessions={tokenSessions}
           tokenSessionPage={tokenSessionPage}
+          tokenSessionsLoading={tokenSessionsLoading}
           onLoadTokenSessions={onLoadTokenSessions}
           onChangeTokenSessionPage={onChangeTokenSessionPage}
           onRevokeTokenSession={onRevokeTokenSession}
@@ -109,6 +117,7 @@ export function ApprovalAuditPanel({
           auditLogs={auditLogs}
           auditLogPage={auditLogPage}
           auditLogFilters={auditLogFilters}
+          auditLogsLoading={auditLogsLoading}
           onLoadAudits={onLoadAudits}
           onAuditLogFiltersChange={onAuditLogFiltersChange}
           onCopyTraceId={onCopyTraceId}
