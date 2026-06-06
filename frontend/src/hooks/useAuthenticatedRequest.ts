@@ -1,5 +1,5 @@
 import { useRef } from 'react';
-import { ApiError, isUnauthorizedError, request, Session } from '../api';
+import { ApiError, isApiError, isUnauthorizedError, request, Session } from '../api';
 import { refreshLoginSession } from '../services/workspaceApi';
 
 export function useAuthenticatedRequest({
@@ -12,6 +12,10 @@ export function useAuthenticatedRequest({
   const refreshPromiseRef = useRef<Promise<Session> | null>(null);
   const token = session?.accessToken;
 
+  function shouldExpireSessionAfterRefreshFailure(error: unknown) {
+    return isApiError(error) && (error.kind === 'auth' || error.status === 403 || error.code === 'FORBIDDEN');
+  }
+
   async function refreshSession() {
     if (!session?.refreshToken) {
       throw new ApiError('登录态已失效，请重新登录', 401, 'UNAUTHORIZED', undefined, 'auth');
@@ -21,6 +25,12 @@ export function useAuthenticatedRequest({
         .then((result) => {
           saveSession(result.data);
           return result.data;
+        })
+        .catch((error) => {
+          if (shouldExpireSessionAfterRefreshFailure(error)) {
+            throw new ApiError('登录态已失效，请重新登录', 401, 'UNAUTHORIZED', error.traceId, 'auth');
+          }
+          throw error;
         })
         .finally(() => {
           refreshPromiseRef.current = null;

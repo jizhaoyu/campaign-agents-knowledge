@@ -381,6 +381,81 @@ test('returns to login when the stored token is invalid', async ({ page }) => {
   await expect(page.getByText(/登录态已失效，请重新登录/)).toBeVisible();
 });
 
+test('clears the session when refresh is rejected for a disabled account', async ({ page }) => {
+  await page.route('**/api/v1/auth/login', async (route) => {
+    await route.fulfill({
+      contentType: 'application/json',
+      body: JSON.stringify(
+        okResponse('trace-login-disabled-later', {
+          accessToken: 'valid-access-token',
+          refreshToken: 'disabled-account-refresh-token',
+          expiresIn: 7200,
+          refreshExpiresIn: 604800,
+          username: 'disabled_later_user',
+          displayName: '稍后禁用用户',
+          roles: ['USER'],
+          permissions: ['chat:use', 'ticket:draft', 'ticket:submit', 'ticket:similar:read']
+        })
+      )
+    });
+  });
+
+  await page.route('**/api/v1/knowledge-bases', async (route) => {
+    if (route.request().headers().authorization === 'Bearer invalid-token') {
+      await route.fulfill({
+        status: 401,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          code: 'UNAUTHORIZED',
+          message: '登录态已失效，请重新登录',
+          traceId: 'trace-disabled-token',
+          data: null
+        })
+      });
+      return;
+    }
+    await route.fulfill({
+      contentType: 'application/json',
+      body: JSON.stringify(okResponse('trace-kb-list', []))
+    });
+  });
+
+  await page.route('**/api/v1/chat/history**', async (route) => {
+    await route.fulfill({
+      contentType: 'application/json',
+      body: JSON.stringify(okResponse('trace-history-empty', []))
+    });
+  });
+
+  await page.route('**/api/v1/auth/refresh', async (route) => {
+    await route.fulfill({
+      status: 403,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        code: 'FORBIDDEN',
+        message: '账号不可用',
+        traceId: 'trace-refresh-disabled-account',
+        data: null
+      })
+    });
+  });
+
+  await page.goto('/');
+
+  await page.getByRole('button', { name: '进入工作台' }).click();
+  await expect(page.getByRole('heading', { name: '知识驱动的工单协同台' })).toBeVisible();
+
+  await page.evaluate(() => {
+    const savedSession = JSON.parse(localStorage.getItem('kta-session') || '{}');
+    localStorage.setItem('kta-session', JSON.stringify({ ...savedSession, accessToken: 'invalid-token' }));
+  });
+  await page.reload();
+
+  await expect(page.getByRole('heading', { name: '企业知识库到工单闭环的 AI 工作台' })).toBeVisible();
+  await expect(page.getByText(/登录态已失效，请重新登录/)).toBeVisible();
+  await expect(page.evaluate(() => localStorage.getItem('kta-session'))).resolves.toBeNull();
+});
+
 test('clears corrupt stored sessions instead of crashing on startup', async ({ page }) => {
   await page.addInitScript(() => {
     localStorage.setItem('kta-session', '{not-valid-json');
