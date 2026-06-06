@@ -63,7 +63,7 @@ public class UserAdminService {
 
     @Transactional
     public UserAdminResponse unlockUser(Long userId) {
-        UserAccount user = userAccountRepository.findById(userId)
+        UserAccount user = userAccountRepository.findLockedById(userId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.RESOURCE_NOT_FOUND, "用户不存在: " + userId));
         int previousFailedCount = user.getFailedLoginCount();
         boolean wasLocked = user.getLockedUntil() != null;

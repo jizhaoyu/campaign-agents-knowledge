@@ -59,7 +59,7 @@ public class AuthService {
     @Transactional(noRollbackFor = BusinessException.class)
     public LoginResponse login(LoginRequest request) {
         String username = request.username().trim();
-        UserAccount user = userAccountRepository.findByUsernameIgnoreCase(username)
+        UserAccount user = userAccountRepository.findLockedByUsernameIgnoreCase(username)
                 .orElseThrow(() -> {
                     auditLoginFailed(null, username, "USER_NOT_FOUND", 0, false);
                     return new BusinessException(ErrorCode.UNAUTHORIZED, "用户名或密码错误");

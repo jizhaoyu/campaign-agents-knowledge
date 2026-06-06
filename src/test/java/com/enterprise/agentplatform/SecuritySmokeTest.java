@@ -316,6 +316,54 @@ class SecuritySmokeTest {
     }
 
     @Test
+    void shouldCountConcurrentFailedLoginsWithoutLostUpdates() throws Exception {
+        long raceUserId = 60_000L + Math.floorMod(System.nanoTime(), 1_000_000L);
+        String username = "failed_login_race_user_" + raceUserId;
+        insertTestUser(raceUserId, username, "{noop}race123", 3, false);
+
+        CountDownLatch startGate = new CountDownLatch(1);
+        ExecutorService executor = Executors.newFixedThreadPool(2);
+        try {
+            Callable<Integer> failedLoginCall = () -> {
+                if (!startGate.await(5, TimeUnit.SECONDS)) {
+                    throw new IllegalStateException("failed login race did not start");
+                }
+                return mockMvc.perform(post("/api/v1/auth/login")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("""
+                                        {
+                                          "username": "%s",
+                                          "password": "wrong-password"
+                                        }
+                                        """.formatted(username)))
+                        .andReturn()
+                        .getResponse()
+                        .getStatus();
+            };
+            Future<Integer> firstLogin = executor.submit(failedLoginCall);
+            Future<Integer> secondLogin = executor.submit(failedLoginCall);
+            startGate.countDown();
+
+            List<Integer> statuses = List.of(
+                    firstLogin.get(10, TimeUnit.SECONDS),
+                    secondLogin.get(10, TimeUnit.SECONDS)
+            );
+
+            assertThat(statuses).containsOnly(401);
+            UserAccount lockedUser = userAccountRepository.findByUsernameIgnoreCase(username).orElseThrow();
+            assertThat(lockedUser.getFailedLoginCount()).isEqualTo(5);
+            assertThat(lockedUser.getLockedUntil()).isNotNull();
+            assertThat(latestAudit("USER_LOGIN_LOCKED", "USER", raceUserId))
+                    .isNotNull()
+                    .extracting(AuditLog::getPayloadJson)
+                    .asString()
+                    .contains("\"failedLoginCount\":5");
+        } finally {
+            executor.shutdownNow();
+        }
+    }
+
+    @Test
     void shouldAllowAdminToListAndUnlockUsers() throws Exception {
         long lockedUserId = 20_000L + Math.floorMod(System.nanoTime(), 1_000_000L);
         String username = "admin_unlock_user_" + lockedUserId;
