@@ -19,6 +19,7 @@ export function ApprovalAuditPanel({
   approvalTasks,
   approvalCommentTemplates,
   approvalsLoading,
+  decidingApprovalKeys,
   auditLogs,
   auditLogPage,
   auditLogFilters,
@@ -29,6 +30,9 @@ export function ApprovalAuditPanel({
   tokenSessionPage,
   tokenSessionsLoading,
   auditLogsLoading,
+  unlockingUserIds,
+  revokingTokenSessionIds,
+  revokingUserTokenSessionIds,
   canApprove,
   canManageUsers,
   canManageTokenSessions,
@@ -51,6 +55,7 @@ export function ApprovalAuditPanel({
   approvalTasks: ApprovalTask[];
   approvalCommentTemplates: ApprovalCommentTemplate[];
   approvalsLoading: boolean;
+  decidingApprovalKeys: string[];
   auditLogs: AuditLog[];
   auditLogPage: AuditLogPage | null;
   auditLogFilters: AuditLogFilters;
@@ -61,6 +66,9 @@ export function ApprovalAuditPanel({
   tokenSessionPage: TokenSessionAdminPage | null;
   tokenSessionsLoading: boolean;
   auditLogsLoading: boolean;
+  unlockingUserIds: number[];
+  revokingTokenSessionIds: number[];
+  revokingUserTokenSessionIds: number[];
   canApprove: boolean;
   canManageUsers: boolean;
   canManageTokenSessions: boolean;
@@ -87,6 +95,7 @@ export function ApprovalAuditPanel({
           approvalTasks={approvalTasks}
           approvalCommentTemplates={approvalCommentTemplates}
           approvalsLoading={approvalsLoading}
+          decidingApprovalKeys={decidingApprovalKeys}
           onLoadApprovals={onLoadApprovals}
           onDecideApproval={onDecideApproval}
         />
@@ -97,6 +106,8 @@ export function ApprovalAuditPanel({
           users={users}
           userPage={userPage}
           usersLoading={usersLoading}
+          unlockingUserIds={unlockingUserIds}
+          revokingUserTokenSessionIds={revokingUserTokenSessionIds}
           onLoadUsers={onLoadUsers}
           onChangeUserPage={onChangeUserPage}
           onUnlockUser={onUnlockUser}
@@ -109,6 +120,7 @@ export function ApprovalAuditPanel({
           tokenSessions={tokenSessions}
           tokenSessionPage={tokenSessionPage}
           tokenSessionsLoading={tokenSessionsLoading}
+          revokingTokenSessionIds={revokingTokenSessionIds}
           onLoadTokenSessions={onLoadTokenSessions}
           onChangeTokenSessionPage={onChangeTokenSessionPage}
           onRevokeTokenSession={onRevokeTokenSession}

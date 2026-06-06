@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import {
   AuditLog,
   AuditLogFilters,
@@ -50,6 +50,12 @@ export function useAdminWorkspace({
   const [tokenSessionPage, setTokenSessionPage] = useState<TokenSessionAdminPage | null>(null);
   const [tokenSessionsLoading, setTokenSessionsLoading] = useState(false);
   const [auditLogsLoading, setAuditLogsLoading] = useState(false);
+  const [unlockingUserIds, setUnlockingUserIds] = useState<number[]>([]);
+  const [revokingTokenSessionIds, setRevokingTokenSessionIds] = useState<number[]>([]);
+  const [revokingUserTokenSessionIds, setRevokingUserTokenSessionIds] = useState<number[]>([]);
+  const unlockingUserIdRef = useRef(new Set<number>());
+  const revokingTokenSessionIdRef = useRef(new Set<number>());
+  const revokingUserTokenSessionIdRef = useRef(new Set<number>());
 
   function resetAdminWorkspace() {
     setAuditLogs([]);
@@ -62,6 +68,34 @@ export function useAdminWorkspace({
     setTokenSessionPage(null);
     setTokenSessionsLoading(false);
     setAuditLogsLoading(false);
+    setUnlockingUserIds([]);
+    setRevokingTokenSessionIds([]);
+    setRevokingUserTokenSessionIds([]);
+    unlockingUserIdRef.current.clear();
+    revokingTokenSessionIdRef.current.clear();
+    revokingUserTokenSessionIdRef.current.clear();
+  }
+
+  function markIdOperation(
+    operationIdsRef: { current: Set<number> },
+    setOperationIds: (updater: (current: number[]) => number[]) => void,
+    id: number
+  ) {
+    if (operationIdsRef.current.has(id)) {
+      return false;
+    }
+    operationIdsRef.current.add(id);
+    setOperationIds((current) => (current.includes(id) ? current : [...current, id]));
+    return true;
+  }
+
+  function unmarkIdOperation(
+    operationIdsRef: { current: Set<number> },
+    setOperationIds: (updater: (current: number[]) => number[]) => void,
+    id: number
+  ) {
+    operationIdsRef.current.delete(id);
+    setOperationIds((current) => current.filter((item) => item !== id));
   }
 
   function updateAuditLogFilters(filters: AuditLogFilters) {
@@ -113,7 +147,7 @@ export function useAdminWorkspace({
   }
 
   async function unlockUser(userId: number) {
-    if (!token || !userAdmin) {
+    if (!token || !userAdmin || !markIdOperation(unlockingUserIdRef, setUnlockingUserIds, userId)) {
       return;
     }
     try {
@@ -122,6 +156,8 @@ export function useAdminWorkspace({
       setNotice({ tone: 'ok', text: `账号已解锁：${result.data.username}` });
     } catch (error) {
       handleRequestError(error);
+    } finally {
+      unmarkIdOperation(unlockingUserIdRef, setUnlockingUserIds, userId);
     }
   }
 
@@ -143,7 +179,11 @@ export function useAdminWorkspace({
   }
 
   async function revokeTokenSession(sessionId: number) {
-    if (!token || !tokenSessionAdmin) {
+    if (
+      !token ||
+      !tokenSessionAdmin ||
+      !markIdOperation(revokingTokenSessionIdRef, setRevokingTokenSessionIds, sessionId)
+    ) {
       return;
     }
     try {
@@ -154,11 +194,17 @@ export function useAdminWorkspace({
       setNotice({ tone: 'ok', text: `Token 会话已吊销：#${result.data.id}` });
     } catch (error) {
       handleRequestError(error);
+    } finally {
+      unmarkIdOperation(revokingTokenSessionIdRef, setRevokingTokenSessionIds, sessionId);
     }
   }
 
   async function revokeUserTokenSessions(userId: number) {
-    if (!token || !tokenSessionAdmin) {
+    if (
+      !token ||
+      !tokenSessionAdmin ||
+      !markIdOperation(revokingUserTokenSessionIdRef, setRevokingUserTokenSessionIds, userId)
+    ) {
       return;
     }
     try {
@@ -170,6 +216,8 @@ export function useAdminWorkspace({
       setNotice({ tone: 'ok', text: `用户 Token 会话已批量吊销：${result.data.length} 条` });
     } catch (error) {
       handleRequestError(error);
+    } finally {
+      unmarkIdOperation(revokingUserTokenSessionIdRef, setRevokingUserTokenSessionIds, userId);
     }
   }
 
@@ -184,6 +232,9 @@ export function useAdminWorkspace({
     tokenSessionPage,
     tokenSessionsLoading,
     auditLogsLoading,
+    unlockingUserIds,
+    revokingTokenSessionIds,
+    revokingUserTokenSessionIds,
     updateAuditLogFilters,
     loadAudits,
     loadUsers,

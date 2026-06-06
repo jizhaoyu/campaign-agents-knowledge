@@ -8,6 +8,7 @@ export function TokenSessionSection({
   tokenSessions,
   tokenSessionPage,
   tokenSessionsLoading,
+  revokingTokenSessionIds,
   onLoadTokenSessions,
   onChangeTokenSessionPage,
   onRevokeTokenSession
@@ -15,6 +16,7 @@ export function TokenSessionSection({
   tokenSessions: TokenSessionAdmin[];
   tokenSessionPage: TokenSessionAdminPage | null;
   tokenSessionsLoading: boolean;
+  revokingTokenSessionIds: number[];
   onLoadTokenSessions: () => void;
   onChangeTokenSessionPage: (page: number) => void;
   onRevokeTokenSession: (sessionId: number) => void;
@@ -46,8 +48,12 @@ export function TokenSessionSection({
             签发 {session.issuedAt} / Access 过期 {session.expiresAt} / Refresh 过期 {session.refreshExpiresAt}
           </small>
           <small>{session.lastRefreshedAt ? `最近刷新 ${session.lastRefreshedAt}` : '尚未刷新'}</small>
-          <button type="button" onClick={() => onRevokeTokenSession(session.id)} disabled={!session.active}>
-            吊销会话
+          <button
+            type="button"
+            onClick={() => onRevokeTokenSession(session.id)}
+            disabled={!session.active || revokingTokenSessionIds.includes(session.id)}
+          >
+            {revokingTokenSessionIds.includes(session.id) ? '吊销中...' : '吊销会话'}
           </button>
         </div>
       ))}

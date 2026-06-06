@@ -134,6 +134,9 @@ function App() {
     tokenSessionPage,
     tokenSessionsLoading,
     auditLogsLoading,
+    unlockingUserIds,
+    revokingTokenSessionIds,
+    revokingUserTokenSessionIds,
     updateAuditLogFilters,
     loadAudits,
     loadUsers,
@@ -155,6 +158,7 @@ function App() {
     approvalTasks,
     approvalCommentTemplates,
     approvalsLoading,
+    decidingApprovalKeys,
     loadApprovals,
     decideApproval,
     resetApprovalWorkspace
@@ -373,6 +377,7 @@ function App() {
               approvalTasks={approvalTasks}
               approvalCommentTemplates={approvalCommentTemplates}
               approvalsLoading={approvalsLoading}
+              decidingApprovalKeys={decidingApprovalKeys}
               auditLogs={auditLogs}
               auditLogPage={auditLogPage}
               auditLogFilters={auditLogFilters}
@@ -383,6 +388,9 @@ function App() {
               tokenSessionPage={tokenSessionPage}
               tokenSessionsLoading={tokenSessionsLoading}
               auditLogsLoading={auditLogsLoading}
+              unlockingUserIds={unlockingUserIds}
+              revokingTokenSessionIds={revokingTokenSessionIds}
+              revokingUserTokenSessionIds={revokingUserTokenSessionIds}
               canApprove={approvalReviewer}
               canManageUsers={userAdmin}
               canManageTokenSessions={tokenSessionAdmin}

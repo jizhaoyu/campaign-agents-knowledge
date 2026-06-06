@@ -10,12 +10,14 @@ export function ApprovalQueueSection({
   approvalTasks,
   approvalCommentTemplates,
   approvalsLoading,
+  decidingApprovalKeys,
   onLoadApprovals,
   onDecideApproval
 }: {
   approvalTasks: ApprovalTask[];
   approvalCommentTemplates: ApprovalCommentTemplate[];
   approvalsLoading: boolean;
+  decidingApprovalKeys: string[];
   onLoadApprovals: () => void;
   onDecideApproval: (id: number, action: ApprovalAction, templateCode: string, comment: string) => void;
 }) {
@@ -27,6 +29,14 @@ export function ApprovalQueueSection({
 
   function templatesFor(action: ApprovalAction) {
     return approvalCommentTemplates.filter((template) => template.action === action);
+  }
+
+  function isDeciding(taskId: number) {
+    return decidingApprovalKeys.some((key) => key.startsWith(`${taskId}:`));
+  }
+
+  function isActionDeciding(taskId: number, action: ApprovalAction) {
+    return decidingApprovalKeys.includes(`${taskId}:${action}`);
   }
 
   function onTemplateChange(event: ChangeEvent<HTMLSelectElement>) {
@@ -96,7 +106,9 @@ export function ApprovalQueueSection({
                   maxLength={255}
                   placeholder="可选择模板后再补充说明"
                 />
-                <button type="submit">{action === 'approve' ? '通过' : '驳回'}</button>
+                <button type="submit" disabled={isDeciding(task.id)}>
+                  {isActionDeciding(task.id, action) ? '处理中...' : action === 'approve' ? '通过' : '驳回'}
+                </button>
               </form>
             ))}
           </div>

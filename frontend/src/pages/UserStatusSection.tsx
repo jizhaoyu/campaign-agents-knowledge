@@ -8,6 +8,8 @@ export function UserStatusSection({
   users,
   userPage,
   usersLoading,
+  unlockingUserIds,
+  revokingUserTokenSessionIds,
   onLoadUsers,
   onChangeUserPage,
   onUnlockUser,
@@ -16,6 +18,8 @@ export function UserStatusSection({
   users: UserAdmin[];
   userPage: UserAdminPage | null;
   usersLoading: boolean;
+  unlockingUserIds: number[];
+  revokingUserTokenSessionIds: number[];
   onLoadUsers: () => void;
   onChangeUserPage: (page: number) => void;
   onUnlockUser: (userId: number) => void;
@@ -42,12 +46,16 @@ export function UserStatusSection({
           <button
             type="button"
             onClick={() => onUnlockUser(user.id)}
-            disabled={!user.lockedUntil && user.failedLoginCount === 0}
+            disabled={unlockingUserIds.includes(user.id) || (!user.lockedUntil && user.failedLoginCount === 0)}
           >
-            解锁
+            {unlockingUserIds.includes(user.id) ? '解锁中...' : '解锁'}
           </button>
-          <button type="button" onClick={() => onRevokeUserTokenSessions(user.id)}>
-            吊销该用户会话
+          <button
+            type="button"
+            onClick={() => onRevokeUserTokenSessions(user.id)}
+            disabled={revokingUserTokenSessionIds.includes(user.id)}
+          >
+            {revokingUserTokenSessionIds.includes(user.id) ? '吊销中...' : '吊销该用户会话'}
           </button>
         </div>
       ))}
