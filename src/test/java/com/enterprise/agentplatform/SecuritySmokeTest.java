@@ -98,6 +98,19 @@ class SecuritySmokeTest {
     }
 
     @Test
+    void shouldSendBrowserSecurityHeadersForSpaAndApiResponses() throws Exception {
+        MvcResult spaResponse = mockMvc.perform(get("/"))
+                .andExpect(status().isOk())
+                .andReturn();
+        MvcResult apiResponse = mockMvc.perform(get("/api/v1/knowledge-bases"))
+                .andExpect(status().isUnauthorized())
+                .andReturn();
+
+        assertBrowserSecurityHeaders(spaResponse);
+        assertBrowserSecurityHeaders(apiResponse);
+    }
+
+    @Test
     void shouldPersistOnlyTokenHashAndResolveAfterStoreRecreation() throws Exception {
         JsonNode data = objectMapper.readTree(loginResult("admin", "admin123")
                         .getResponse()
@@ -582,6 +595,23 @@ class SecuritySmokeTest {
                                 """.formatted(username, password)))
                 .andExpect(status().isOk())
                 .andReturn();
+    }
+
+    private void assertBrowserSecurityHeaders(MvcResult result) {
+        assertThat(result.getResponse().getHeader("Content-Security-Policy"))
+                .contains("default-src 'self'")
+                .contains("script-src 'self'")
+                .contains("style-src 'self'")
+                .contains("connect-src 'self'")
+                .contains("frame-ancestors 'none'")
+                .contains("object-src 'none'");
+        assertThat(result.getResponse().getHeader("Referrer-Policy"))
+                .isEqualTo("strict-origin-when-cross-origin");
+        assertThat(result.getResponse().getHeader("Permissions-Policy"))
+                .contains("camera=()")
+                .contains("microphone=()")
+                .contains("geolocation=()")
+                .contains("payment=()");
     }
 
     private void insertTestUser(long id, String username, String passwordHash, int failedLoginCount, boolean locked) {
