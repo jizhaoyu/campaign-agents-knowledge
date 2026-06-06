@@ -101,7 +101,7 @@ root 密码只用于 MySQL 初始化和健康检查。应用容器不要使用 r
 ```powershell
 $env:SPRING_PROFILES_ACTIVE='mysql,ai-openai'
 $env:OPENAI_API_KEY='your-api-key-or-relay-key'
-$env:OPENAI_BASE_URL='https://your-relay.example.com/v1'
+$env:OPENAI_BASE_URL='https://mmw-codex.zenscaleai.com/v1'
 $env:OPENAI_CHAT_MODEL='gpt-5.5'
 docker compose up --build
 ```
@@ -131,7 +131,7 @@ mvn spring-boot:run "-Dspring-boot.run.profiles=mysql"
 
 ```powershell
 $env:OPENAI_API_KEY='your-api-key-or-relay-key'
-$env:OPENAI_BASE_URL='https://your-openai-compatible-base-url.example/v1'
+$env:OPENAI_BASE_URL='https://mmw-codex.zenscaleai.com/v1'
 $env:OPENAI_CHAT_MODEL='gpt-5.5'
 mvn spring-boot:run "-Dspring-boot.run.profiles=ai-openai"
 ```

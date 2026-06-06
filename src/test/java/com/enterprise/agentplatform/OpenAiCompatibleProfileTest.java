@@ -18,11 +18,11 @@ class OpenAiCompatibleProfileTest {
     @Test
     void shouldUseOpenAiCompatibleDefaults() {
         assertThat(environment.getProperty("spring.ai.openai.base-url"))
-                .isEqualTo("https://api.openai.com/v1");
+                .isEqualTo("https://mmw-codex.zenscaleai.com/v1");
         assertThat(environment.getProperty("spring.ai.openai.chat.completions-path"))
                 .isEqualTo("/chat/completions");
         assertThat(environment.getProperty("spring.ai.openai.chat.options.model"))
-                .isEqualTo("gpt-5.4");
+                .isEqualTo("gpt-5.5");
         assertThat(environment.getProperty("spring.ai.model.embedding"))
                 .isEqualTo("none");
         assertThat(environment.getProperty("app.ai.embedding.enabled", Boolean.class))

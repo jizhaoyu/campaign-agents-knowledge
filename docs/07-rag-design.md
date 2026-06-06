@@ -18,7 +18,7 @@
 当前代码支持两种模式：
 
 - 默认模式：关键词检索 + 规则式答案生成，不需要模型 API key。
-- `ai-openai` profile：启用 Spring AI OpenAI-compatible chat，默认模型为 `gpt-5.4`，可通过 `OPENAI_BASE_URL` 接官方 OpenAI 或中转站。embedding 默认关闭，只有显式设置 `OPENAI_EMBEDDING_PROVIDER=openai` 和 `OPENAI_EMBEDDING_ENABLED=true` 时，导入文档才会写入 `embedding_json`，问答才会合并关键词得分和 embedding 相似度。
+- `ai-openai` profile：启用 Spring AI OpenAI-compatible chat，默认模型为 `gpt-5.5`，默认端点按本机 Codex 配置设为 `https://mmw-codex.zenscaleai.com/v1`，也可通过 `OPENAI_BASE_URL` 覆盖为官方 OpenAI 或其他中转站。embedding 默认关闭，只有显式设置 `OPENAI_EMBEDDING_PROVIDER=openai` 和 `OPENAI_EMBEDDING_ENABLED=true` 时，导入文档才会写入 `embedding_json`，问答才会合并关键词得分和 embedding 相似度。
 
 本机 Codex 配置中的 `base_url` 和 `model` 可以映射为项目的 `OPENAI_BASE_URL` 与 `OPENAI_CHAT_MODEL`。但 Codex 的 `wire_api = "responses"` 是客户端协议配置；当前 Spring AI 集成走 `/chat/completions`，需要供应商实际支持该接口。
 

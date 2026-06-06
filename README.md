@@ -78,7 +78,7 @@
 - 工单草稿生成、提交、审批，审批备注支持标准模板和人工编辑
 - 审计日志查询、traceId 复制和调用链回看
 
-默认模式不需要 API key，会使用本地关键词检索和规则式答案生成。启用 `ai-openai` profile 后，会走 OpenAI-compatible Chat API；默认 chat 模型为 `gpt-5.4`，适配官方 OpenAI 或中转站。embedding 默认关闭，需要时单独启用。
+默认模式不需要 API key，会使用本地关键词检索和规则式答案生成。启用 `ai-openai` profile 后，会走 OpenAI-compatible Chat API；默认 chat 模型为 `gpt-5.5`，默认端点已按本机 Codex 配置设为 `https://mmw-codex.zenscaleai.com/v1`。embedding 默认关闭，需要时单独启用。
 
 ## 快速启动
 
@@ -184,7 +184,7 @@ docker compose up --build
 ```powershell
 $env:SPRING_PROFILES_ACTIVE='mysql,ai-openai'
 $env:OPENAI_API_KEY='your-api-key-or-relay-key'
-$env:OPENAI_BASE_URL='https://your-relay.example.com/v1'
+$env:OPENAI_BASE_URL='https://mmw-codex.zenscaleai.com/v1'
 $env:OPENAI_CHAT_MODEL='gpt-5.5'
 docker compose up --build
 ```
@@ -197,9 +197,17 @@ PowerShell:
 
 ```powershell
 $env:OPENAI_API_KEY='your-api-key-or-relay-key'
-$env:OPENAI_BASE_URL='https://your-relay.example.com/v1'
+$env:OPENAI_BASE_URL='https://mmw-codex.zenscaleai.com/v1'
 $env:OPENAI_CHAT_MODEL='gpt-5.5'
 mvn spring-boot:run "-Dspring-boot.run.profiles=ai-openai"
+```
+
+也可以把本地环境变量写入不会提交的 `.env`，再用脚本启动：
+
+```powershell
+Copy-Item .env.example .env
+# 编辑 .env，把 OPENAI_API_KEY 改成真实 key
+.\scripts\start-local.ps1 -Profiles ai-openai
 ```
 
 如果要按本机 Codex 的 `C:\Users\888\.codex\config.toml` 对齐，目前对应关系是：
@@ -210,9 +218,9 @@ mvn spring-boot:run "-Dspring-boot.run.profiles=ai-openai"
 
 可选环境变量：
 
-- `OPENAI_BASE_URL`，默认 `https://api.openai.com/v1`，中转站通常直接填它提供的 `/v1` 地址
+- `OPENAI_BASE_URL`，默认已按本机 Codex 配置设为 `https://mmw-codex.zenscaleai.com/v1`，中转站通常直接填它提供的 `/v1` 地址
 - `OPENAI_COMPATIBLE_API_KEY`，当不想使用 `OPENAI_API_KEY` 变量名时可用
-- `OPENAI_CHAT_MODEL`，默认 `gpt-5.4`
+- `OPENAI_CHAT_MODEL`，默认 `gpt-5.5`
 - `OPENAI_CHAT_COMPLETIONS_PATH`，默认 `/chat/completions`
 - `OPENAI_EMBEDDING_PROVIDER`，默认 `none`；需要 embedding 时设为 `openai`
 - `OPENAI_EMBEDDING_ENABLED`，默认 `false`；需要 embedding 时设为 `true`
@@ -223,7 +231,7 @@ mvn spring-boot:run "-Dspring-boot.run.profiles=ai-openai"
 
 管理员可在前端 `AI配置` 页面或通过 `GET /api/v1/ai/runtime` 查看当前运行配置状态。接口只返回是否已配置凭证，不返回 `OPENAI_API_KEY` 或 `OPENAI_COMPATIBLE_API_KEY` 的明文值。
 
-注意：Codex 的 `wire_api = "responses"` 是 Codex 客户端自己的协议配置；本项目当前通过 Spring AI 调用 OpenAI-compatible `/chat/completions`。如果中转站只支持 Responses API 而不支持 Chat Completions，需要更换兼容端点或后续新增 Responses API 适配。
+注意：Codex 的 `wire_api = "responses"` 是 Codex 客户端自己的协议配置；本项目当前通过 Spring AI 调用 OpenAI-compatible `/chat/completions`。如果该中转站只支持 Responses API 而不支持 Chat Completions，需要更换兼容端点或后续新增 Responses API 适配。
 
 ### 启动 MySQL 模式
 
@@ -258,7 +266,7 @@ mvn spring-boot:run "-Dspring-boot.run.profiles=mysql"
 
 ```powershell
 $env:OPENAI_API_KEY='your-api-key-or-relay-key'
-$env:OPENAI_BASE_URL='https://your-relay.example.com/v1'
+$env:OPENAI_BASE_URL='https://mmw-codex.zenscaleai.com/v1'
 $env:OPENAI_CHAT_MODEL='gpt-5.5'
 $env:MYSQL_JDBC_URL='jdbc:mysql://localhost:3306/agentdb?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true'
 $env:MYSQL_USERNAME='root'

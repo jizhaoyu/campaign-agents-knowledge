@@ -593,7 +593,7 @@ Query：
       "provider": "openai",
       "baseUrl": "https://relay.example.com/v1",
       "path": "/chat/completions",
-      "model": "gpt-5.4"
+      "model": "gpt-5.5"
     },
     "embedding": {
       "enabled": false,
