@@ -119,7 +119,7 @@ public class DocumentService {
 
     @Transactional
     public DocumentUploadResponse reindex(Long documentId) {
-        DocumentRecord record = documentRecordRepository.findById(documentId)
+        DocumentRecord record = documentRecordRepository.findLockedById(documentId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.RESOURCE_NOT_FOUND, "文档不存在: " + documentId));
         return queueReindex(record);
     }
@@ -133,14 +133,17 @@ public class DocumentService {
                 .toList();
         List<DocumentUploadResponse> responses = new ArrayList<>();
         for (DocumentRecord record : failedRecords) {
-            responses.add(queueReindex(record));
+            documentRecordRepository.findLockedById(record.getId())
+                    .filter(lockedRecord -> lockedRecord.getIndexStatus() == ProcessingStatus.FAILED)
+                    .map(this::queueReindex)
+                    .ifPresent(responses::add);
         }
         return responses;
     }
 
     @Transactional
     public void delete(Long documentId) {
-        DocumentRecord record = documentRecordRepository.findById(documentId)
+        DocumentRecord record = documentRecordRepository.findLockedById(documentId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.RESOURCE_NOT_FOUND, "文档不存在: " + documentId));
         if (record.getIndexStatus() == ProcessingStatus.PENDING) {
             throw new BusinessException(ErrorCode.VALIDATION_ERROR, "文档正在索引中，暂不能删除");

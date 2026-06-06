@@ -43,5 +43,7 @@ public interface DocumentIndexTaskRepository extends JpaRepository<DocumentIndex
 
     long countByStatus(DocumentIndexTaskStatus status);
 
+    boolean existsByDocumentIdAndStatusIn(Long documentId, List<DocumentIndexTaskStatus> statuses);
+
     List<DocumentIndexTask> findByDocumentIdOrderByIdDesc(Long documentId);
 }

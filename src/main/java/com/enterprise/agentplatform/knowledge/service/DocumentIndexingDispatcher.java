@@ -7,6 +7,7 @@ import com.enterprise.agentplatform.domain.enums.ProcessingStatus;
 import com.enterprise.agentplatform.domain.repository.DocumentIndexTaskRepository;
 import com.enterprise.agentplatform.domain.repository.DocumentRecordRepository;
 import java.time.LocalDateTime;
+import java.util.List;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -15,6 +16,11 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
 
 @Service
 public class DocumentIndexingDispatcher {
+
+    private static final List<DocumentIndexTaskStatus> ACTIVE_TASK_STATUSES = List.of(
+            DocumentIndexTaskStatus.PENDING,
+            DocumentIndexTaskStatus.RUNNING
+    );
 
     private final DocumentRecordRepository documentRecordRepository;
     private final DocumentIndexTaskRepository documentIndexTaskRepository;
@@ -51,13 +57,17 @@ public class DocumentIndexingDispatcher {
     }
 
     private void enqueue(Long documentId, String traceId) {
-        DocumentRecord record = documentRecordRepository.findById(documentId).orElse(null);
-        if (record != null) {
-            record.setParseStatus(ProcessingStatus.PENDING);
-            record.setIndexStatus(ProcessingStatus.PENDING);
-            record.setFailureReason(null);
-            documentRecordRepository.save(record);
+        DocumentRecord record = documentRecordRepository.findLockedById(documentId).orElse(null);
+        if (record == null) {
+            return;
         }
+        if (documentIndexTaskRepository.existsByDocumentIdAndStatusIn(documentId, ACTIVE_TASK_STATUSES)) {
+            return;
+        }
+        record.setParseStatus(ProcessingStatus.PENDING);
+        record.setIndexStatus(ProcessingStatus.PENDING);
+        record.setFailureReason(null);
+        documentRecordRepository.save(record);
 
         DocumentIndexTask task = new DocumentIndexTask();
         task.setDocumentId(documentId);
