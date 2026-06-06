@@ -1,10 +1,12 @@
 package com.enterprise.agentplatform.domain.repository;
 
 import com.enterprise.agentplatform.domain.entity.AuthTokenSession;
+import jakarta.persistence.LockModeType;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -14,6 +16,9 @@ public interface AuthTokenSessionRepository extends JpaRepository<AuthTokenSessi
     Optional<AuthTokenSession> findByTokenHash(String tokenHash);
 
     Optional<AuthTokenSession> findByRefreshTokenHash(String refreshTokenHash);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    Optional<AuthTokenSession> findLockedByRefreshTokenHash(String refreshTokenHash);
 
     List<AuthTokenSession> findByUsernameOrderByIdDesc(String username);
 

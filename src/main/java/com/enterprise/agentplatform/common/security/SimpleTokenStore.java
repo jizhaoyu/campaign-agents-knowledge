@@ -85,7 +85,7 @@ public class SimpleTokenStore {
         if (refreshToken == null || refreshToken.isBlank()) {
             return Optional.empty();
         }
-        Optional<AuthTokenSession> sessionOptional = authTokenSessionRepository.findByRefreshTokenHash(hashToken(refreshToken.trim()));
+        Optional<AuthTokenSession> sessionOptional = authTokenSessionRepository.findLockedByRefreshTokenHash(hashToken(refreshToken.trim()));
         if (sessionOptional.isEmpty()) {
             return Optional.empty();
         }

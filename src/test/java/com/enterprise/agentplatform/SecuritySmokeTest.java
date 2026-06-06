@@ -19,8 +19,15 @@ import com.enterprise.agentplatform.domain.repository.UserAccountRepository;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.Callable;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -163,6 +170,54 @@ class SecuritySmokeTest {
                 .isNotNull()
                 .extracting(AuditLog::getActorId)
                 .isEqualTo(sessionAfterRefresh.getUserId());
+    }
+
+    @Test
+    void shouldAcceptOnlyOneConcurrentRefreshForSameToken() throws Exception {
+        long refreshUserId = 50_000L + Math.floorMod(System.nanoTime(), 1_000_000L);
+        String username = "refresh_race_user_" + refreshUserId;
+        insertTestUser(refreshUserId, username, "{noop}refresh123", 0, false);
+        JsonNode loginData = objectMapper.readTree(loginResult(username, "refresh123").getResponse().getContentAsString())
+                .path("data");
+        String refreshToken = loginData.path("refreshToken").asText();
+
+        CountDownLatch startGate = new CountDownLatch(1);
+        ExecutorService executor = Executors.newFixedThreadPool(2);
+        try {
+            Callable<Integer> refreshCall = () -> {
+                if (!startGate.await(5, TimeUnit.SECONDS)) {
+                    throw new IllegalStateException("refresh race did not start");
+                }
+                return mockMvc.perform(post("/api/v1/auth/refresh")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("""
+                                        {
+                                          "refreshToken": "%s"
+                                        }
+                                        """.formatted(refreshToken)))
+                        .andReturn()
+                        .getResponse()
+                        .getStatus();
+            };
+            Future<Integer> firstRefresh = executor.submit(refreshCall);
+            Future<Integer> secondRefresh = executor.submit(refreshCall);
+            startGate.countDown();
+
+            List<Integer> statuses = List.of(
+                    firstRefresh.get(10, TimeUnit.SECONDS),
+                    secondRefresh.get(10, TimeUnit.SECONDS)
+            );
+
+            assertThat(statuses).containsExactlyInAnyOrder(200, 401);
+            AuthTokenSession refreshedSession = authTokenSessionRepository.findByUsernameOrderByIdDesc(username).get(0);
+            assertThat(refreshedSession.getLastRefreshedAt()).isNotNull();
+            assertThat(latestAudit("USER_TOKEN_REFRESHED", "AUTH_TOKEN_SESSION", refreshedSession.getId()))
+                    .isNotNull()
+                    .extracting(AuditLog::getActorId)
+                    .isEqualTo(refreshUserId);
+        } finally {
+            executor.shutdownNow();
+        }
     }
 
     @Test
