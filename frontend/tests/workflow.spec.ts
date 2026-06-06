@@ -380,3 +380,15 @@ test('returns to login when the stored token is invalid', async ({ page }) => {
   await expect(page.getByRole('heading', { name: '企业知识库到工单闭环的 AI 工作台' })).toBeVisible();
   await expect(page.getByText(/登录态已失效，请重新登录/)).toBeVisible();
 });
+
+test('clears corrupt stored sessions instead of crashing on startup', async ({ page }) => {
+  await page.addInitScript(() => {
+    localStorage.setItem('kta-session', '{not-valid-json');
+  });
+
+  await page.goto('/');
+
+  await expect(page.getByRole('heading', { name: '企业知识库到工单闭环的 AI 工作台' })).toBeVisible();
+  await expect(page.getByLabel('账号')).toBeVisible();
+  await expect(page.evaluate(() => localStorage.getItem('kta-session'))).resolves.toBeNull();
+});
