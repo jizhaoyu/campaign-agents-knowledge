@@ -245,7 +245,12 @@ function App() {
       saveSession(result.data);
       setNotice({ tone: 'ok', text: `已登录：${result.data.displayName}` });
     } catch (error) {
-      handleRequestError(error);
+      if (isUnauthorizedError(error)) {
+        const traceId = error.traceId ? `，traceId: ${error.traceId}` : '';
+        setNotice({ tone: 'error', text: `登录失败：${error.message}${traceId}` });
+        return;
+      }
+      showError(error);
     }
   }
 

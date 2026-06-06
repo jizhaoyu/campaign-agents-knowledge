@@ -97,6 +97,30 @@ async function routeAdminShell(page: Page) {
   });
 }
 
+test('shows credential feedback when login fails', async ({ page }) => {
+  await page.route('**/api/v1/auth/login', async (route) => {
+    await route.fulfill({
+      status: 401,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        code: 'UNAUTHORIZED',
+        message: '用户名或密码错误',
+        traceId: 'trace-login-failed',
+        data: null
+      })
+    });
+  });
+
+  await page.goto('/');
+  await page.getByLabel('账号').fill('admin');
+  await page.getByLabel('密码').fill('wrong-password');
+  await page.getByRole('button', { name: '进入工作台' }).click();
+
+  await expect(page.getByText('登录失败：用户名或密码错误，traceId: trace-login-failed')).toBeVisible();
+  await expect(page.getByText('登录态已失效，请重新登录')).toHaveCount(0);
+  await expect(page.getByRole('heading', { name: '企业知识库到工单闭环的 AI 工作台' })).toBeVisible();
+});
+
 test('shows validation feedback when document upload fails', async ({ page }) => {
   await routeAdminShell(page);
 
