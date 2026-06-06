@@ -59,6 +59,10 @@ function App() {
     documentKeyword,
     documentStatusFilter,
     documentsLoading,
+    uploadDocumentLoading,
+    retryFailedDocumentsLoading,
+    reindexingDocumentIds,
+    deletingDocumentIds,
     setSelectedKnowledgeBaseId,
     setKnowledgeBaseKeyword,
     setDocumentKeyword,
@@ -299,6 +303,10 @@ function App() {
               documentKeyword={documentKeyword}
               documentStatusFilter={documentStatusFilter}
               documentsLoading={documentsLoading}
+              uploadDocumentLoading={uploadDocumentLoading}
+              retryFailedDocumentsLoading={retryFailedDocumentsLoading}
+              reindexingDocumentIds={reindexingDocumentIds}
+              deletingDocumentIds={deletingDocumentIds}
               canManageKnowledge={knowledgeManager}
               onSelectKnowledgeBase={setSelectedKnowledgeBaseId}
               onKnowledgeBaseKeywordChange={setKnowledgeBaseKeyword}

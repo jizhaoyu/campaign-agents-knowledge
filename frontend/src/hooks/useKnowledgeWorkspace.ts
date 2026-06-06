@@ -51,8 +51,16 @@ export function useKnowledgeWorkspace({
   const [documentKeyword, setDocumentKeyword] = useState('');
   const [documentStatusFilter, setDocumentStatusFilter] = useState('');
   const [documentsLoading, setDocumentsLoading] = useState(false);
+  const [uploadDocumentLoading, setUploadDocumentLoading] = useState(false);
+  const [retryFailedDocumentsLoading, setRetryFailedDocumentsLoading] = useState(false);
+  const [reindexingDocumentIds, setReindexingDocumentIds] = useState<number[]>([]);
+  const [deletingDocumentIds, setDeletingDocumentIds] = useState<number[]>([]);
   const deferredKnowledgeBaseKeyword = useDeferredValue(knowledgeBaseKeyword);
   const documentsRef = useRef<DocumentUpload[]>([]);
+  const uploadDocumentInFlightRef = useRef(false);
+  const retryFailedDocumentsInFlightRef = useRef(false);
+  const reindexingDocumentIdRef = useRef(new Set<number>());
+  const deletingDocumentIdRef = useRef(new Set<number>());
 
   function setDocumentList(nextDocuments: DocumentUpload[]) {
     documentsRef.current = nextDocuments;
@@ -74,6 +82,14 @@ export function useKnowledgeWorkspace({
     setDocumentKeyword('');
     setDocumentStatusFilter('');
     setDocumentsLoading(false);
+    setUploadDocumentLoading(false);
+    setRetryFailedDocumentsLoading(false);
+    setReindexingDocumentIds([]);
+    setDeletingDocumentIds([]);
+    uploadDocumentInFlightRef.current = false;
+    retryFailedDocumentsInFlightRef.current = false;
+    reindexingDocumentIdRef.current.clear();
+    deletingDocumentIdRef.current.clear();
   }
 
   function requireText(form: FormData, field: string, label: string) {
@@ -144,6 +160,28 @@ export function useKnowledgeWorkspace({
     setDocumentList(mergeDocumentsById(documentsRef.current, nextDocuments));
   }
 
+  function markDocumentOperation(
+    operationIdsRef: { current: Set<number> },
+    setOperationIds: (updater: (current: number[]) => number[]) => void,
+    documentId: number
+  ) {
+    if (operationIdsRef.current.has(documentId)) {
+      return false;
+    }
+    operationIdsRef.current.add(documentId);
+    setOperationIds((current) => (current.includes(documentId) ? current : [...current, documentId]));
+    return true;
+  }
+
+  function unmarkDocumentOperation(
+    operationIdsRef: { current: Set<number> },
+    setOperationIds: (updater: (current: number[]) => number[]) => void,
+    documentId: number
+  ) {
+    operationIdsRef.current.delete(documentId);
+    setOperationIds((current) => current.filter((id) => id !== documentId));
+  }
+
   function announceDocumentTransitions(previousDocuments: DocumentUpload[], nextDocuments: DocumentUpload[]) {
     const notice = documentTransitionNotice(previousDocuments, nextDocuments);
     if (notice) {
@@ -210,7 +248,7 @@ export function useKnowledgeWorkspace({
   }
 
   async function reindexDocument(documentId: number) {
-    if (!token || !knowledgeManager) {
+    if (!token || !knowledgeManager || !markDocumentOperation(reindexingDocumentIdRef, setReindexingDocumentIds, documentId)) {
       return;
     }
     try {
@@ -223,14 +261,21 @@ export function useKnowledgeWorkspace({
       });
     } catch (error) {
       handleRequestError(error);
+    } finally {
+      unmarkDocumentOperation(reindexingDocumentIdRef, setReindexingDocumentIds, documentId);
     }
   }
 
   async function retryFailedDocuments() {
+    if (retryFailedDocumentsInFlightRef.current) {
+      return;
+    }
     if (!token || !selectedKnowledgeBaseId || !knowledgeManager) {
       setNotice({ tone: 'warn', text: '请先选择知识库' });
       return;
     }
+    retryFailedDocumentsInFlightRef.current = true;
+    setRetryFailedDocumentsLoading(true);
     try {
       const result = await workspaceApi.retryFailedDocuments(authRequest, token, selectedKnowledgeBaseId);
       mergeDocuments(result.data);
@@ -241,11 +286,14 @@ export function useKnowledgeWorkspace({
       });
     } catch (error) {
       handleRequestError(error);
+    } finally {
+      retryFailedDocumentsInFlightRef.current = false;
+      setRetryFailedDocumentsLoading(false);
     }
   }
 
   async function deleteDocument(documentId: number) {
-    if (!token || !knowledgeManager) {
+    if (!token || !knowledgeManager || !markDocumentOperation(deletingDocumentIdRef, setDeletingDocumentIds, documentId)) {
       return;
     }
     try {
@@ -254,6 +302,8 @@ export function useKnowledgeWorkspace({
       setNotice({ tone: 'ok', text: '文档已删除' });
     } catch (error) {
       handleRequestError(error);
+    } finally {
+      unmarkDocumentOperation(deletingDocumentIdRef, setDeletingDocumentIds, documentId);
     }
   }
 
@@ -287,6 +337,9 @@ export function useKnowledgeWorkspace({
 
   async function uploadDocument(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (uploadDocumentInFlightRef.current) {
+      return;
+    }
     if (!token || !selectedKnowledgeBaseId || !knowledgeManager) {
       setNotice({ tone: 'warn', text: '请先选择知识库' });
       return;
@@ -299,6 +352,8 @@ export function useKnowledgeWorkspace({
       setNotice({ tone: 'warn', text: '请选择要上传的文档' });
       return;
     }
+    uploadDocumentInFlightRef.current = true;
+    setUploadDocumentLoading(true);
     try {
       const result = await workspaceApi.uploadDocument(authRequest, token, form);
       formElement.reset();
@@ -307,6 +362,9 @@ export function useKnowledgeWorkspace({
       setNotice({ tone: 'ok', text: '文档已上传，正在后台解析和索引' });
     } catch (error) {
       handleRequestError(error);
+    } finally {
+      uploadDocumentInFlightRef.current = false;
+      setUploadDocumentLoading(false);
     }
   }
 
@@ -320,6 +378,10 @@ export function useKnowledgeWorkspace({
     documentKeyword,
     documentStatusFilter,
     documentsLoading,
+    uploadDocumentLoading,
+    retryFailedDocumentsLoading,
+    reindexingDocumentIds,
+    deletingDocumentIds,
     setSelectedKnowledgeBaseId,
     setKnowledgeBaseKeyword,
     setDocumentKeyword,

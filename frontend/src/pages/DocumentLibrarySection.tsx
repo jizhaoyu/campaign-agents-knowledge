@@ -6,11 +6,15 @@ import { SkeletonBlock } from '../components/SkeletonBlock';
 
 function DocumentRow({
   document,
+  reindexing,
+  deleting,
   onRefreshDocument,
   onReindexDocument,
   onDeleteDocument
 }: {
   document: DocumentUpload;
+  reindexing: boolean;
+  deleting: boolean;
   onRefreshDocument: (documentId: number) => void;
   onReindexDocument: (documentId: number) => void;
   onDeleteDocument: (documentId: number) => void;
@@ -39,16 +43,16 @@ function DocumentRow({
         <button type="button" onClick={() => onRefreshDocument(document.id)}>
           状态
         </button>
-        <button type="button" onClick={() => onReindexDocument(document.id)} disabled={documentPending}>
-          重建索引
+        <button type="button" onClick={() => onReindexDocument(document.id)} disabled={documentPending || reindexing || deleting}>
+          {reindexing ? '重建中...' : '重建索引'}
         </button>
         <button
           className="danger-action"
           type="button"
           onClick={() => onDeleteDocument(document.id)}
-          disabled={documentPending}
+          disabled={documentPending || deleting || reindexing}
         >
-          删除
+          {deleting ? '删除中...' : '删除'}
         </button>
       </div>
     </div>
@@ -63,6 +67,9 @@ export function DocumentLibrarySection({
   documentKeyword,
   documentStatusFilter,
   documentsLoading,
+  retryFailedDocumentsLoading,
+  reindexingDocumentIds,
+  deletingDocumentIds,
   onDocumentKeywordChange,
   onDocumentPageSizeChange,
   onDocumentStatusFilterChange,
@@ -80,6 +87,9 @@ export function DocumentLibrarySection({
   documentKeyword: string;
   documentStatusFilter: string;
   documentsLoading: boolean;
+  retryFailedDocumentsLoading: boolean;
+  reindexingDocumentIds: number[];
+  deletingDocumentIds: number[];
   onDocumentKeywordChange: (keyword: string) => void;
   onDocumentPageSizeChange: (size: number) => void;
   onDocumentStatusFilterChange: (status: string) => void;
@@ -140,8 +150,8 @@ export function DocumentLibrarySection({
           <option value={20}>20</option>
           <option value={50}>50</option>
         </select>
-        <button type="button" onClick={onRetryFailedDocuments} disabled={failedCount === 0}>
-          重试失败文档
+        <button type="button" onClick={onRetryFailedDocuments} disabled={failedCount === 0 || retryFailedDocumentsLoading}>
+          {retryFailedDocumentsLoading ? '重试中...' : '重试失败文档'}
         </button>
       </div>
       {showDocumentSkeleton && <SkeletonBlock label="文档列表骨架" lines={4} variant="panel" />}
@@ -162,6 +172,8 @@ export function DocumentLibrarySection({
               <DocumentRow
                 key={document.id}
                 document={document}
+                reindexing={reindexingDocumentIds.includes(document.id)}
+                deleting={deletingDocumentIds.includes(document.id)}
                 onRefreshDocument={onRefreshDocument}
                 onReindexDocument={onReindexDocument}
                 onDeleteDocument={onDeleteDocument}

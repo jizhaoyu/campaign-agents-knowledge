@@ -14,6 +14,10 @@ export function KnowledgePanel({
   documentKeyword,
   documentStatusFilter,
   documentsLoading,
+  uploadDocumentLoading,
+  retryFailedDocumentsLoading,
+  reindexingDocumentIds,
+  deletingDocumentIds,
   canManageKnowledge,
   onSelectKnowledgeBase,
   onKnowledgeBaseKeywordChange,
@@ -38,6 +42,10 @@ export function KnowledgePanel({
   documentKeyword: string;
   documentStatusFilter: string;
   documentsLoading: boolean;
+  uploadDocumentLoading: boolean;
+  retryFailedDocumentsLoading: boolean;
+  reindexingDocumentIds: number[];
+  deletingDocumentIds: number[];
   canManageKnowledge: boolean;
   onSelectKnowledgeBase: (id: number | '') => void;
   onKnowledgeBaseKeywordChange: (keyword: string) => void;
@@ -65,7 +73,12 @@ export function KnowledgePanel({
         onCreateKnowledgeBase={onCreateKnowledgeBase}
       />
 
-      {canManageKnowledge && <DocumentUploadSection onUploadDocument={onUploadDocument} />}
+      {canManageKnowledge && (
+        <DocumentUploadSection
+          uploadDocumentLoading={uploadDocumentLoading}
+          onUploadDocument={onUploadDocument}
+        />
+      )}
 
       {canManageKnowledge && (
         <DocumentLibrarySection
@@ -76,6 +89,9 @@ export function KnowledgePanel({
           documentKeyword={documentKeyword}
           documentStatusFilter={documentStatusFilter}
           documentsLoading={documentsLoading}
+          retryFailedDocumentsLoading={retryFailedDocumentsLoading}
+          reindexingDocumentIds={reindexingDocumentIds}
+          deletingDocumentIds={deletingDocumentIds}
           onDocumentKeywordChange={onDocumentKeywordChange}
           onDocumentPageSizeChange={onDocumentPageSizeChange}
           onDocumentStatusFilterChange={onDocumentStatusFilterChange}
