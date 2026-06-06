@@ -64,7 +64,7 @@ public class ApprovalService {
     }
 
     private ApprovalTaskResponse decide(Long approvalId, boolean approve, String templateCode, String comment) {
-        ApprovalTask task = approvalTaskRepository.findById(approvalId)
+        ApprovalTask task = approvalTaskRepository.findLockedById(approvalId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.APPROVAL_NOT_FOUND, "审批任务不存在"));
 
         Long currentUserId = currentUserService.requireUserId();

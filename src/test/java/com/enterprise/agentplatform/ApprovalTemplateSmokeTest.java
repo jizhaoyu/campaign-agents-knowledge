@@ -120,6 +120,49 @@ class ApprovalTemplateSmokeTest {
         assertThat(task.getStatus().name()).isEqualTo("PENDING");
     }
 
+    @Test
+    void shouldRejectSecondDecisionAfterApprovalIsAlreadyDecided() throws Exception {
+        String userToken = login("user", "user123");
+        Long conversationId = createConversation(2L);
+        SubmitTicketResponse submittedTicket = submitHighPriorityTicket(userToken, conversationId);
+        String approverToken = login("approver", "approver123");
+
+        mockMvc.perform(post("/api/v1/approvals/{id}/approve", submittedTicket.approvalTaskId())
+                        .header("Authorization", "Bearer " + approverToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "templateCode": "APPROVE_EVIDENCE_SUFFICIENT",
+                                  "comment": ""
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.status").value("APPROVED"));
+
+        mockMvc.perform(post("/api/v1/approvals/{id}/reject", submittedTicket.approvalTaskId())
+                        .header("Authorization", "Bearer " + approverToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "templateCode": "REJECT_EVIDENCE_INSUFFICIENT",
+                                  "comment": ""
+                                }
+                                """))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("APPROVAL_ALREADY_DECIDED"));
+
+        ApprovalTask task = approvalTaskRepository.findById(submittedTicket.approvalTaskId()).orElseThrow();
+        assertThat(task.getStatus().name()).isEqualTo("APPROVED");
+
+        Ticket ticket = ticketRepository.findById(submittedTicket.ticketId()).orElseThrow();
+        assertThat(ticket.getStatus()).isEqualTo(TicketStatus.OPEN);
+        assertThat(auditLogRepository.findFirstByEventTypeAndTargetTypeAndTargetIdOrderByIdDesc(
+                "APPROVAL_REJECTED",
+                "TICKET",
+                ticket.getId()
+        )).isEmpty();
+    }
+
     private SubmitTicketResponse submitHighPriorityTicket(String userToken, Long conversationId) throws Exception {
         MvcResult result = mockMvc.perform(post("/api/v1/tickets")
                         .header("Authorization", "Bearer " + userToken)
