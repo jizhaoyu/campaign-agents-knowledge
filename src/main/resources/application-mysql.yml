@@ -8,5 +8,5 @@ spring:
     hibernate:
       ddl-auto: validate
   flyway:
-    enabled: true
+    enabled: ${MYSQL_FLYWAY_ENABLED:false}
     locations: classpath:db/mysql

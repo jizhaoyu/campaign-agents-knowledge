@@ -34,6 +34,7 @@ class DeploymentFilesSmokeTest {
                 .contains("MYSQL_JDBC_URL: jdbc:mysql://mysql:3306/agentdb")
                 .contains("MYSQL_USERNAME: ${MYSQL_APP_USER:-agent_app}")
                 .contains("MYSQL_PASSWORD: ${MYSQL_APP_PASSWORD:-agent_app_password}")
+                .contains("MYSQL_FLYWAY_ENABLED: ${MYSQL_FLYWAY_ENABLED:-true}")
                 .contains("condition: service_healthy")
                 .contains("mysql-data:")
                 .contains("app-storage:")

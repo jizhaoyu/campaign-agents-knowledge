@@ -92,7 +92,7 @@ docker compose up --build
 默认服务：
 
 - `mysql`：MySQL 8.4，创建 `agentdb` 业务库和专用应用账号，数据写入 `mysql-data` volume
-- `app`：Spring Boot 应用，默认 `SPRING_PROFILES_ACTIVE=mysql`，使用 `MYSQL_APP_USER` / `MYSQL_APP_PASSWORD` 连接 MySQL，上传文件写入 `app-storage` volume
+- `app`：Spring Boot 应用，默认 `SPRING_PROFILES_ACTIVE=mysql`，使用 `MYSQL_APP_USER` / `MYSQL_APP_PASSWORD` 连接 MySQL，Compose 默认设置 `MYSQL_FLYWAY_ENABLED=true` 以支持空库初始化，上传文件写入 `app-storage` volume
 
 root 密码只用于 MySQL 初始化和健康检查。应用容器不要使用 root 账号连接业务库；默认应用账号为 `agent_app`，生产环境必须通过环境变量替换默认密码。
 
@@ -110,7 +110,7 @@ docker compose up --build
 
 ### MySQL 启动
 
-业务库名称建议使用 `agentdb`。在未明确获得授权前，自动化助手只能做 MySQL 读操作核对，不执行建库、迁移、删除、更新等写操作。
+业务库名称建议使用 `agentdb`。本机 `mysql` profile 默认关闭 Flyway，适合你已经手动创建业务库并执行过 `src/main/resources/db/mysql` SQL 的场景。在未明确获得授权前，自动化助手只能做 MySQL 读操作核对，不执行建库、迁移、删除、更新等写操作。
 
 应用启动命令：
 
@@ -121,7 +121,7 @@ $env:MYSQL_PASSWORD='123456'
 mvn spring-boot:run "-Dspring-boot.run.profiles=mysql"
 ```
 
-启动 `mysql` profile 后，Flyway 会使用 `classpath:db/mysql` 迁移脚本在目标业务库中建表和写入种子账号。
+启动 `mysql` profile 后，应用会通过 `ddl-auto=validate` 校验表结构是否匹配实体，但默认不会运行 Flyway。如需让 Flyway 接管迁移，显式设置 `$env:MYSQL_FLYWAY_ENABLED='true'`，此时会使用 `classpath:db/mysql` 迁移脚本在目标业务库中建表和写入种子账号。
 
 代码侧通过 `MysqlSchemaEntityAlignmentTest` 静态比对 `src/main/resources/db/mysql/*.sql` 与 JPA 实体表/列，防止实体字段新增后漏写 MySQL 迁移。该测试只读本地 SQL 文件和注解，不连接 MySQL；真实环境仍需要在你明确授权后再启动 `mysql` profile 做运行验收。
 

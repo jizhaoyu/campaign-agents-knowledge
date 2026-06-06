@@ -227,7 +227,14 @@ mvn spring-boot:run "-Dspring-boot.run.profiles=ai-openai"
 
 ### 启动 MySQL 模式
 
-MySQL profile 使用业务库 `agentdb`，连接默认值为 `root / 123456 / localhost:3306`。需要你先明确创建业务库；之后启动应用时 Flyway 会在该库内创建/更新项目表。
+MySQL profile 使用业务库 `agentdb`，连接默认值为 `root / 123456 / localhost:3306`。当前默认假设你已经手动创建业务库并执行过 `src/main/resources/db/mysql` 下的 SQL 脚本，所以 `application-mysql.yml` 默认关闭 Flyway，不会在启动时自动建表或写入种子数据。
+
+启动前需要确认：
+
+- MySQL 服务已运行，端口为 `localhost:3306`。
+- 业务库 `agentdb` 已存在。
+- `src/main/resources/db/mysql` 下的建表和种子 SQL 已按版本顺序执行。
+- 表结构和当前 JPA 实体一致；应用启动时仍会通过 `ddl-auto: validate` 只读校验表/字段，不会自动改表。
 
 PowerShell:
 
@@ -237,6 +244,15 @@ $env:MYSQL_USERNAME='root'
 $env:MYSQL_PASSWORD='123456'
 mvn spring-boot:run "-Dspring-boot.run.profiles=mysql"
 ```
+
+如果你确实需要让 Flyway 重新接管迁移，必须显式开启：
+
+```powershell
+$env:MYSQL_FLYWAY_ENABLED='true'
+mvn spring-boot:run "-Dspring-boot.run.profiles=mysql"
+```
+
+注意：开启 `MYSQL_FLYWAY_ENABLED=true` 后，Flyway 会执行 `classpath:db/mysql` 迁移脚本，可能创建/修改表并写入种子数据。仅在确认目标库适合迁移时使用。
 
 如果同时启用 MySQL 和 OpenAI-compatible：
 
