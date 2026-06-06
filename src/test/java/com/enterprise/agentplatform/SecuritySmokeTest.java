@@ -88,6 +88,16 @@ class SecuritySmokeTest {
     }
 
     @Test
+    void shouldNotExposeBasicAuthenticationChallenge() throws Exception {
+        mockMvc.perform(get("/api/v1/knowledge-bases")
+                        .header("Authorization", "Basic YWRtaW46YWRtaW4xMjM="))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.code").value("UNAUTHORIZED"))
+                .andExpect(jsonPath("$.message").value("缺少 Bearer token"))
+                .andExpect(result -> assertThat(result.getResponse().getHeader("WWW-Authenticate")).isNull());
+    }
+
+    @Test
     void shouldPersistOnlyTokenHashAndResolveAfterStoreRecreation() throws Exception {
         JsonNode data = objectMapper.readTree(loginResult("admin", "admin123")
                         .getResponse()
