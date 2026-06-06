@@ -28,7 +28,10 @@ public class LocalFileStorageService {
         try {
             Files.createDirectories(baseDir);
             String fileName = UUID.randomUUID() + "-" + sanitize(file.getOriginalFilename());
-            Path destination = baseDir.resolve(fileName);
+            Path destination = baseDir.resolve(fileName).normalize();
+            if (!isInStorageBaseDir(destination)) {
+                throw new BusinessException(ErrorCode.VALIDATION_ERROR, "文件路径非法");
+            }
             file.transferTo(destination);
             return destination.toString();
         } catch (IOException ex) {
@@ -37,13 +40,25 @@ public class LocalFileStorageService {
     }
 
     public Path resolve(String objectKey) {
-        return Paths.get(objectKey).toAbsolutePath().normalize();
+        if (objectKey == null || objectKey.isBlank()) {
+            throw new BusinessException(ErrorCode.VALIDATION_ERROR, "文件路径非法");
+        }
+        Path keyPath = Paths.get(objectKey);
+        Path target = keyPath.isAbsolute()
+                ? keyPath.toAbsolutePath().normalize()
+                : baseDir.resolve(keyPath).normalize();
+        if (!isInStorageBaseDir(target)) {
+            throw new BusinessException(ErrorCode.VALIDATION_ERROR, "文件路径非法");
+        }
+        return target;
     }
 
     public void deleteIfExists(String objectKey) {
-        Path target = resolve(objectKey);
-        if (!target.startsWith(baseDir)) {
-            log.warn("Skip deleting file outside storage base dir: target={}, baseDir={}", target, baseDir);
+        Path target;
+        try {
+            target = resolve(objectKey);
+        } catch (BusinessException ex) {
+            log.warn("Skip deleting file outside storage base dir: objectKey={}, baseDir={}", objectKey, baseDir);
             return;
         }
         try {
@@ -56,5 +71,9 @@ public class LocalFileStorageService {
     private String sanitize(String fileName) {
         String value = fileName == null || fileName.isBlank() ? "upload.bin" : fileName;
         return value.replaceAll("[^a-zA-Z0-9._-]", "_");
+    }
+
+    private boolean isInStorageBaseDir(Path target) {
+        return target.startsWith(baseDir);
     }
 }
